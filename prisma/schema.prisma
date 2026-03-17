@@ -1,0 +1,136 @@
+// =============================================================================
+// Basis Norm Explorer — Database Schema
+// PostgreSQL + Prisma
+//
+// Architecture:
+//   Document → Article (self-referencing tree) → PdfZone → OcrText
+//
+// Source of truth for the Next.js frontend.
+// Populated by an external Python pipeline via direct PostgreSQL inserts.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Document
+//
+// One row = one imported PDF.
+// fileHash (SHA-256) prevents duplicate ingestion.
+// pdfPath is the storage path used to serve the original PDF.
+// -----------------------------------------------------------------------------
+model Document {
+  id        String   @id @default(cuid())
+  title     String
+  pdfPath   String
+  fileHash  String   @unique                 // SHA-256, guards against re-ingestion
+  language  String   @default("fr")
+  version   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  articles  Article[]
+
+  @@index([language])
+  @@index([createdAt])
+  @@map("documents")
+}
+
+// -----------------------------------------------------------------------------
+// Article
+//
+// One row = one section / article / sub-article inside a document.
+// Self-referencing tree via parentId.
+//
+// level:      1 = top-level chapter, 2 = section, 3 = sub-section, …
+// orderIndex: position among siblings (for ordered display)
+// slug:       URL-safe identifier, unique within a document
+// pageStart / pageEnd: page range in the original PDF
+// -----------------------------------------------------------------------------
+model Article {
+  id         String   @id @default(cuid())
+  documentId String
+  parentId   String?                         // null = root node
+  title      String?
+  slug       String                          // e.g. "1-2-3" or "art-42"
+  level      Int                             // hierarchy depth
+  orderIndex Int
+  pageStart  Int
+  pageEnd    Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  document Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  parent   Article?  @relation("ArticleTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Article[] @relation("ArticleTree")
+  zones    PdfZone[]
+
+  @@unique([documentId, slug])              // slug unique within a document
+  @@index([documentId, orderIndex])        // ordered listing per document
+  @@index([documentId, level])             // level-based navigation
+  @@index([parentId])                      // children lookup
+  @@map("articles")
+}
+
+// -----------------------------------------------------------------------------
+// PdfZone
+//
+// One row = one visual bounding box inside the PDF for a given article.
+// An article can have several zones (multi-page or multi-block articles).
+//
+// Coordinates (x, y, width, height) are in PDF points or pixels —
+// the Python pipeline decides the unit; the frontend reads it as-is.
+//
+// imagePath: pre-rendered cropped image served to the UI.
+// The original PDF is never replaced — imagePath is a visual snapshot only.
+// -----------------------------------------------------------------------------
+model PdfZone {
+  id        String   @id @default(cuid())
+  articleId String
+  page      Int                             // 1-based page number
+  x         Float
+  y         Float
+  width     Float
+  height    Float
+  imagePath String                          // path to the pre-rendered crop
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  article Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  ocrText OcrText?                          // one zone may have one OCR block
+
+  @@index([articleId])
+  @@index([articleId, page])
+  @@map("pdf_zones")
+}
+
+// -----------------------------------------------------------------------------
+// OcrText
+//
+// One row = OCR transcription of one PdfZone.
+// PURPOSE: search, filtering, highlighting only.
+// The text here is NOT displayed as content — the UI always renders imagePath.
+//
+// For full-text search, add a GIN index on text via a raw SQL migration:
+//   CREATE INDEX ocr_texts_text_gin ON ocr_texts USING gin(to_tsvector('french', text));
+// -----------------------------------------------------------------------------
+model OcrText {
+  id        String   @id @default(cuid())
+  zoneId    String   @unique                // 1:1 with PdfZone
+  text      String                          // raw OCR output
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  zone PdfZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@map("ocr_texts")
+}

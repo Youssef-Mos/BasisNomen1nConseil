@@ -1,0 +1,15 @@
+# Basis Norm Explorer — Python Pipeline
+# pip install -r requirements.txt
+
+# Lecture et rendu PDF
+PyMuPDF>=1.23
+
+# OCR
+pytesseract>=0.3
+Pillow>=10.0
+
+# PostgreSQL
+psycopg2-binary>=2.9
+
+# Variables d'environnement
+python-dotenv>=1.0

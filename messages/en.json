@@ -1,0 +1,7 @@
+{
+  "home": {
+    "title": "Basis Norm Explorer",
+    "subtitle": "Technical baseline initialized: Next.js, Prisma and multi-document architecture.",
+    "status": "Ready to consume structured data from PostgreSQL."
+  }
+}
