@@ -29,7 +29,7 @@ PAGES_DIR = BASE_DIR / "public" / "pdf-pages"
 # ---------------------------------------------------------------------------
 
 # Charger le .env à la racine du projet
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / ".env", override=True)
 
 DATABASE_URL: str = os.environ.get("DATABASE_URL", "")
 
