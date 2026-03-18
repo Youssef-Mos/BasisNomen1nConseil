@@ -3,7 +3,7 @@
  * Client Component : gère l'état global (accordéons ouverts, recherche, article actif).
  *
  * Reçoit l'arbre d'articles depuis le Server Component parent.
- * Toute l'interactivité (sidebar, accordéon, recherche) est coordonnée ici.
+ * Toute l'interactivité (sidebar, accordéon, recherche, filtres guidés) est coordonnée ici.
  */
 
 "use client"
@@ -14,6 +14,7 @@ import { DocsSidebar } from "./DocsSidebar"
 import { ArticleAccordion } from "./ArticleAccordion"
 import { SearchBar } from "./SearchBar"
 import { SearchResultsPanel } from "./SearchResultsPanel"
+import { GuidedFilter } from "./GuidedFilter"
 
 interface DocsLayoutProps {
   documentId: string
@@ -68,6 +69,9 @@ export function DocsLayout({ documentId, documentTitle, tree }: DocsLayoutProps)
   const [searchResults, setSearchResults] = useState<SearchResultItem[] | null>(null)
   const [searchQuery, setSearchQuery]     = useState<string>("")
 
+  /** Panneau de filtres guidés visible ou non. */
+  const [filterOpen, setFilterOpen] = useState(false)
+
   // ── Résultats de recherche ─────────────────────────────────────────────
 
   const handleSearchResults = useCallback(
@@ -101,15 +105,13 @@ export function DocsLayout({ documentId, documentTitle, tree }: DocsLayoutProps)
     setMatchingIds(null)
   }, [])
 
-  const handleNavigateToResult = useCallback(
-    (articleId: string) => {
-      setSearchResults(null)
-      setSearchQuery("")
-      setMatchingIds(null)
+  // ── Navigation partagée ───────────────────────────────────────────────
 
+  /** Navigue vers un article : l'ouvre, ouvre ses ancêtres, scroll jusqu'à lui. */
+  const navigateToArticle = useCallback(
+    (articleId: string) => {
       setActiveId(articleId)
 
-      // Ouvrir l'article et tous ses ancêtres
       setOpenIds((prev) => {
         const next = new Set(prev)
         const path = findPath(tree, articleId)
@@ -117,7 +119,6 @@ export function DocsLayout({ documentId, documentTitle, tree }: DocsLayoutProps)
         return next
       })
 
-      // Scroll vers l'article après le prochain render
       setTimeout(
         () =>
           document.getElementById(articleId)?.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -127,28 +128,37 @@ export function DocsLayout({ documentId, documentTitle, tree }: DocsLayoutProps)
     [tree],
   )
 
+  const handleNavigateToResult = useCallback(
+    (articleId: string) => {
+      setSearchResults(null)
+      setSearchQuery("")
+      setMatchingIds(null)
+      navigateToArticle(articleId)
+    },
+    [navigateToArticle],
+  )
+
+  // ── Filtres guidés ────────────────────────────────────────────────────
+
+  /** Ouvrir le panneau de filtres guidés (ferme les résultats de recherche s'il y en a). */
+  const handleOpenFilter = useCallback(() => {
+    setSearchResults(null)
+    setSearchQuery("")
+    setMatchingIds(null)
+    setFilterOpen(true)
+  }, [])
+
+  const handleCloseFilter = useCallback(() => {
+    setFilterOpen(false)
+  }, [])
+
   // ── Clic sidebar ──────────────────────────────────────────────────────
 
   const handleSidebarSelect = useCallback(
     (id: string) => {
-      setActiveId(id)
-
-      // Ouvrir l'article et tous ses ancêtres
-      setOpenIds((prev) => {
-        const next = new Set(prev)
-        const path = findPath(tree, id)
-        if (path) path.forEach((p) => next.add(p))
-        return next
-      })
-
-      // Scroll vers l'article après le prochain render
-      setTimeout(
-        () =>
-          document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }),
-        60,
-      )
+      navigateToArticle(id)
     },
-    [tree],
+    [navigateToArticle],
   )
 
   // ── Toggle accordéon ─────────────────────────────────────────────────
@@ -202,13 +212,46 @@ export function DocsLayout({ documentId, documentTitle, tree }: DocsLayoutProps)
 
       {/* ── Contenu principal ─────────────────────────────────────────── */}
       <main className="flex flex-1 flex-col overflow-hidden">
-        {/* Barre de recherche */}
+        {/* Barre de recherche + bouton filtres guidés */}
         <div className="shrink-0 border-b border-gray-200 bg-white px-6 py-3">
-          <SearchBar documentId={documentId} onResults={handleSearchResults} />
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <SearchBar documentId={documentId} onResults={handleSearchResults} />
+            </div>
+            <button
+              onClick={filterOpen ? handleCloseFilter : handleOpenFilter}
+              title={filterOpen ? "Fermer les filtres guidés" : "Ouvrir les filtres guidés"}
+              className={[
+                "shrink-0 flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition",
+                filterOpen
+                  ? "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                  : "border-gray-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700",
+              ].join(" ")}
+            >
+              <svg
+                width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+              Filtres guidés
+            </button>
+          </div>
         </div>
 
+        {/* Panneau de filtres guidés */}
+        {filterOpen && (
+          <div className="shrink-0 max-h-[60vh] overflow-y-auto border-b border-gray-200">
+            <GuidedFilter
+              documentId={documentId}
+              onNavigate={navigateToArticle}
+              onClose={handleCloseFilter}
+            />
+          </div>
+        )}
+
         {/* Panneau de résultats de recherche */}
-        {searchResults !== null && (
+        {!filterOpen && searchResults !== null && (
           <div className="shrink-0 max-h-[50vh] overflow-y-auto border-b border-gray-200">
             <SearchResultsPanel
               query={searchQuery}

@@ -96,6 +96,25 @@ export type SearchResponse = {
 }
 
 // ---------------------------------------------------------------------------
+// Filtres guidés
+// ---------------------------------------------------------------------------
+
+export type FilterResultItem = {
+  articleId: string
+  articleTitle: string | null
+  articleSlug: string
+  articlePage: number
+  /** Chemin vers la première image de zone de l'article, pour aperçu visuel. */
+  previewImagePath: string | null
+}
+
+export type FilterResponse = {
+  tags: string[]
+  total: number
+  results: FilterResultItem[]
+}
+
+// ---------------------------------------------------------------------------
 // Erreurs
 // ---------------------------------------------------------------------------
 
