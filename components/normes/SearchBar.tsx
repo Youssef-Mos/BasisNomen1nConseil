@@ -1,52 +1,55 @@
 /**
- * SearchBar — Recherche dans le document courant.
- * Client Component : debounce 350ms, appel GET /api/documents/:id/search?q=...
+ * SearchBar — Recherche manuelle dans le document courant.
+ * Client Component : la recherche se déclenche uniquement sur clic du bouton
+ * "Rechercher" ou sur la touche Entrée — jamais automatiquement.
  * Remonte les résultats au parent via onResults.
  */
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useCallback } from "react"
 import type { SearchResultItem } from "@/lib/types"
 
 interface SearchBarProps {
   documentId: string
-  onResults: (results: SearchResultItem[] | null) => void
+  onResults: (results: SearchResultItem[] | null, query: string) => void
 }
 
 export function SearchBar({ documentId, onResults }: SearchBarProps) {
-  const [query, setQuery]   = useState("")
+  const [query, setQuery]     = useState("")
   const [loading, setLoading] = useState(false)
-  const [count, setCount]   = useState<number | null>(null)
+  const [count, setCount]     = useState<number | null>(null)
 
-  useEffect(() => {
+  const runSearch = useCallback(async () => {
     const trimmed = query.trim()
 
-    if (trimmed.length < 2) {
-      setCount(null)
-      onResults(null)
-      return
+    if (trimmed.length < 2) return
+
+    setLoading(true)
+    try {
+      const res  = await fetch(
+        `/api/documents/${documentId}/search?q=${encodeURIComponent(trimmed)}`,
+      )
+      const data = await res.json()
+      setCount(data?.total ?? 0)
+      onResults(data?.results ?? [], trimmed)
+    } catch {
+      setCount(0)
+      onResults([], trimmed)
+    } finally {
+      setLoading(false)
     }
-
-    const timer = setTimeout(async () => {
-      setLoading(true)
-      try {
-        const res  = await fetch(
-          `/api/documents/${documentId}/search?q=${encodeURIComponent(trimmed)}`,
-        )
-        const data = await res.json()
-        setCount(data?.total ?? 0)
-        onResults(data?.results ?? [])
-      } catch {
-        setCount(0)
-        onResults([])
-      } finally {
-        setLoading(false)
-      }
-    }, 350)
-
-    return () => clearTimeout(timer)
   }, [query, documentId, onResults])
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") runSearch()
+  }
+
+  const handleClear = () => {
+    setQuery("")
+    setCount(null)
+    onResults(null, "")
+  }
 
   return (
     <div className="flex items-center gap-3">
@@ -63,15 +66,42 @@ export function SearchBar({ documentId, onResults }: SearchBarProps) {
         <input
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            // Réinitialiser les résultats si l'utilisateur efface le champ
+            if (e.target.value.trim() === "") {
+              setCount(null)
+              onResults(null, "")
+            }
+          }}
+          onKeyDown={handleKeyDown}
           placeholder="Rechercher dans le document…"
           className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
         />
       </div>
 
-      {/* Indicateur */}
+      {/* Bouton Rechercher */}
+      <button
+        onClick={runSearch}
+        disabled={loading || query.trim().length < 2}
+        className="shrink-0 rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {loading ? "Recherche…" : "Rechercher"}
+      </button>
+
+      {/* Effacer */}
+      {count !== null && (
+        <button
+          onClick={handleClear}
+          className="shrink-0 text-xs text-slate-400 transition hover:text-slate-600"
+          title="Effacer la recherche"
+        >
+          ✕
+        </button>
+      )}
+
+      {/* Compteur de résultats */}
       <span className="w-28 shrink-0 text-right text-xs text-slate-400">
-        {loading && "Recherche…"}
         {!loading && count !== null && (
           <>{count} résultat{count !== 1 ? "s" : ""}</>
         )}

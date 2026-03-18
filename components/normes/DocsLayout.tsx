@@ -13,6 +13,7 @@ import type { ArticleTreeNode, SearchResultItem } from "@/lib/types"
 import { DocsSidebar } from "./DocsSidebar"
 import { ArticleAccordion } from "./ArticleAccordion"
 import { SearchBar } from "./SearchBar"
+import { SearchResultsPanel } from "./SearchResultsPanel"
 
 interface DocsLayoutProps {
   documentId: string
@@ -63,10 +64,17 @@ export function DocsLayout({ documentId, documentTitle, tree }: DocsLayoutProps)
   /** IDs des articles contenant des résultats de recherche (null = pas de recherche active). */
   const [matchingIds, setMatchingIds] = useState<Set<string> | null>(null)
 
+  /** Résultats de la dernière recherche et la requête associée. */
+  const [searchResults, setSearchResults] = useState<SearchResultItem[] | null>(null)
+  const [searchQuery, setSearchQuery]     = useState<string>("")
+
   // ── Résultats de recherche ─────────────────────────────────────────────
 
   const handleSearchResults = useCallback(
-    (results: SearchResultItem[] | null) => {
+    (results: SearchResultItem[] | null, query: string) => {
+      setSearchResults(results)
+      setSearchQuery(query)
+
       if (!results) {
         setMatchingIds(null)
         return
@@ -83,6 +91,38 @@ export function DocsLayout({ documentId, documentTitle, tree }: DocsLayoutProps)
         }
         return next
       })
+    },
+    [tree],
+  )
+
+  const handleCloseResults = useCallback(() => {
+    setSearchResults(null)
+    setSearchQuery("")
+    setMatchingIds(null)
+  }, [])
+
+  const handleNavigateToResult = useCallback(
+    (articleId: string) => {
+      setSearchResults(null)
+      setSearchQuery("")
+      setMatchingIds(null)
+
+      setActiveId(articleId)
+
+      // Ouvrir l'article et tous ses ancêtres
+      setOpenIds((prev) => {
+        const next = new Set(prev)
+        const path = findPath(tree, articleId)
+        if (path) path.forEach((p) => next.add(p))
+        return next
+      })
+
+      // Scroll vers l'article après le prochain render
+      setTimeout(
+        () =>
+          document.getElementById(articleId)?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        60,
+      )
     },
     [tree],
   )
@@ -166,6 +206,18 @@ export function DocsLayout({ documentId, documentTitle, tree }: DocsLayoutProps)
         <div className="shrink-0 border-b border-gray-200 bg-white px-6 py-3">
           <SearchBar documentId={documentId} onResults={handleSearchResults} />
         </div>
+
+        {/* Panneau de résultats de recherche */}
+        {searchResults !== null && (
+          <div className="shrink-0 max-h-[50vh] overflow-y-auto border-b border-gray-200">
+            <SearchResultsPanel
+              query={searchQuery}
+              results={searchResults}
+              onNavigate={handleNavigateToResult}
+              onClose={handleCloseResults}
+            />
+          </div>
+        )}
 
         {/* Articles */}
         <div className="flex-1 overflow-y-auto px-4 py-6 lg:px-10">
