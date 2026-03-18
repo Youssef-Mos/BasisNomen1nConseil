@@ -66,6 +66,8 @@ model Article {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  tags     String[]  @default([])             // classification tags for guided filtering
+
   // Relations
   document Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
   parent   Article?  @relation("ArticleTree", fields: [parentId], references: [id], onDelete: SetNull)
