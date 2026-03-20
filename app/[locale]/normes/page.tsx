@@ -5,6 +5,7 @@
 
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
+import { ImportButton } from "@/components/normes/ImportButton"
 
 export const dynamic = "force-dynamic"
 
@@ -39,16 +40,21 @@ export default async function NormesPage({
     <main className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-3xl px-6 py-16">
         <header className="mb-12">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
-            Basis Norm Explorer
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-            Documents disponibles
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {docs.length} document{docs.length !== 1 ? "s" : ""} indexé
-            {docs.length !== 1 ? "s" : ""}
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                Basis Norm Explorer
+              </p>
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+                Documents disponibles
+              </h1>
+              <p className="mt-2 text-sm text-slate-500">
+                {docs.length} document{docs.length !== 1 ? "s" : ""} indexé
+                {docs.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <ImportButton locale={locale} />
+          </div>
         </header>
 
         {docs.length === 0 ? (
@@ -57,7 +63,7 @@ export default async function NormesPage({
               Aucun document ingéré pour l&apos;instant.
             </p>
             <p className="mt-1 text-xs text-slate-300">
-              Lancez le pipeline Python pour importer un PDF.
+              Utilisez le bouton &laquo;&nbsp;Importer un PDF&nbsp;&raquo; pour ajouter un document.
             </p>
           </div>
         ) : (
