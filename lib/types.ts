@@ -102,3 +102,46 @@ export type SearchResponse = {
 export type ApiError = {
   error: string
 }
+
+// ---------------------------------------------------------------------------
+// Pipeline d'import PDF
+// ---------------------------------------------------------------------------
+
+export type PipelineStepId =
+  | "init"
+  | "create_document"
+  | "extract_pages"
+  | "extract_structure"
+  | "detect_articles"
+  | "build_hierarchy"
+  | "extract_zones"
+  | "run_ocr"
+  | "finalize"
+
+export type StepStatus = "pending" | "running" | "done" | "error"
+
+export type PipelineStep = {
+  id: PipelineStepId
+  label: string
+  status: StepStatus
+}
+
+export type JobStatus = "queued" | "running" | "success" | "error"
+
+export type PipelineJob = {
+  jobId: string
+  status: JobStatus
+  progress: number
+  steps: PipelineStep[]
+  documentId?: string
+  error?: string
+  errorStep?: PipelineStepId
+  startedAt: string
+  finishedAt?: string
+}
+
+export type UploadedFile = {
+  filename: string
+  originalName: string
+  size: number
+}
