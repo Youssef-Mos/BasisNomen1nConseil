@@ -1,59 +1,40 @@
-/**
- * GET /api/documents/:id
- *
- * Retourne les métadonnées complètes d'un document.
- *
- * Réponse : DocumentDetail
- */
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-import { prisma } from "@/lib/prisma"
-import { ok, notFound, serverError } from "@/lib/api"
-import type { DocumentDetail } from "@/lib/types"
+type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+// GET /api/documents/:id — document details
+export async function GET(_request: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
+
+  const doc = await prisma.document.findUnique({
+    where: { id },
+    include: { _count: { select: { rectangles: true } } },
+  });
+
+  if (!doc) {
+    return NextResponse.json({ error: "Document not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    id: doc.id,
+    title: doc.title,
+    pdfPath: doc.pdfPath,
+    pageCount: doc.pageCount,
+    rectangleCount: doc._count.rectangles,
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
+  });
+}
+
+// DELETE /api/documents/:id — delete a document (cascades to rectangles)
+export async function DELETE(_request: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
+
   try {
-    const { id } = await params
-
-    const [document, stats] = await Promise.all([
-      prisma.document.findUnique({
-        where:  { id },
-        select: {
-          id:        true,
-          title:     true,
-          pdfPath:   true,
-          language:  true,
-          version:   true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-
-      prisma.article.aggregate({
-        where:  { documentId: id },
-        _count: { _all: true },
-        _max:   { pageStart: true },
-      }),
-    ])
-
-    if (!document) return notFound("Document introuvable")
-
-    const result: DocumentDetail = {
-      id:           document.id,
-      title:        document.title,
-      pdfPath:      document.pdfPath,
-      language:     document.language,
-      version:      document.version,
-      articleCount: stats._count._all       ?? 0,
-      pageCount:    stats._max.pageStart    ?? 0,
-      createdAt:    document.createdAt.toISOString(),
-      updatedAt:    document.updatedAt.toISOString(),
-    }
-
-    return ok(result)
+    await prisma.document.delete({ where: { id } });
+    return NextResponse.json({ success: true });
   } catch {
-    return serverError()
+    return NextResponse.json({ error: "Document not found." }, { status: 404 });
   }
 }

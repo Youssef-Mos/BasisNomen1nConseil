@@ -1,10 +1,8 @@
 import type { NextConfig } from "next";
-import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Allow serving uploaded PDFs from the uploads directory
+  serverExternalPackages: ["pdf-lib"],
 };
 
-const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
-
-export default withNextIntl(nextConfig);
+export default nextConfig;

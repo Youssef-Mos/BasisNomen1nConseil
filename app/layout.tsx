@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Basis Norm Explorer",
-  description: "Base technique Next.js pour explorer des normes PDF structurees.",
+  description: "SaaS document exploration platform — Admin & User interfaces",
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    <html lang="en">
       <body className="antialiased">{children}</body>
     </html>
   );
