@@ -2,6 +2,8 @@
 # dependenciepublic/pdf-pages/
 /node_modules
 public/pdf-pages/
+__pycache__/
+*.pyc
 /.pnp
 .pnp.*
 .yarn/*
