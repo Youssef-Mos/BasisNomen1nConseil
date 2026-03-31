@@ -267,7 +267,7 @@ export default function DocumentViewer({
 
         {/* Main content */}
         <main className="flex-1 min-w-0 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-8 py-10">
+          <div className="w-full px-8 py-10">
 
             {isFiltered ? (
               /* ── Filter results ────────────────────────────────────────── */
@@ -336,7 +336,7 @@ export default function DocumentViewer({
               </div>
             ) : (
               /* ── Accordion tree ────────────────────────────────────────── */
-              <div>
+              <div className="min-w-0 overflow-x-hidden">
                 <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-5">
                   {roots.length} top-level element{roots.length !== 1 ? "s" : ""}
                 </p>

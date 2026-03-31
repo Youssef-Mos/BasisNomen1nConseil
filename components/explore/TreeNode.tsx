@@ -6,7 +6,8 @@ import TypeBadge from "./ui/TypeBadge";
 import RectCrop from "./RectCrop";
 import TextPreview from "./ui/TextPreview";
 
-const LEVEL_INDENT = 24; // px per depth level
+const LEVEL_INDENT = 12;  // px per depth level
+const MAX_INDENT_LEVEL = 5; // stop indenting beyond this level
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -53,7 +54,8 @@ export default function TreeNode({
   const isOpen = openIds.has(rect.id);
   const text = getText(rect, lang);
 
-  const rowIndent = level * LEVEL_INDENT;
+  const cappedLevel = Math.min(level, MAX_INDENT_LEVEL);
+  const rowIndent = cappedLevel * LEVEL_INDENT;
   const contentIndent = rowIndent + 36; // aligns with text after badge + chevron
 
   return (
@@ -67,7 +69,7 @@ export default function TreeNode({
       {/* ── Row ─────────────────────────────────────────────────────────── */}
       <div
         style={{ paddingLeft: `${rowIndent + 20}px` }}
-        className={`flex items-center gap-x-4 pr-6 py-4 cursor-pointer select-none transition-colors duration-100 ${
+        className={`flex items-center gap-x-4 pr-6 py-4 min-w-0 overflow-hidden cursor-pointer select-none transition-colors duration-100 ${
           isOpen ? "bg-white" : "bg-white hover:bg-gray-50/50"
         }`}
         role="button"
@@ -89,7 +91,7 @@ export default function TreeNode({
             : <span className="italic text-gray-400 text-sm">No text content</span>}
         </span>
 
-        <span className="shrink-0 text-xs text-gray-400 tabular-nums">
+        <span className="shrink-0 ml-auto pl-2 text-xs text-gray-400 tabular-nums">
           p.{rect.page}
         </span>
       </div>
