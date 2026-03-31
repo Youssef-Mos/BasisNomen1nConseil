@@ -17,7 +17,7 @@ type Props = {
 export default function PropertiesPanel({
   rectangle,
   allRectangles,
-  documentId,
+  documentId: _documentId,
   onUpdate,
   onDelete,
   onDeselect,
@@ -49,11 +49,18 @@ export default function PropertiesPanel({
 
   if (!rectangle) {
     return (
-      <div className="w-80 border-l border-gray-200 bg-white p-4 shrink-0">
-        <p className="text-sm text-gray-400 text-center mt-8">
-          Select a rectangle to edit its properties
-        </p>
-      </div>
+      <aside className="w-80 xl:w-96 min-w-70 border-l border-gray-200 bg-white shrink-0 flex flex-col items-center justify-center p-8">
+        <div className="text-center space-y-2">
+          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
+            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+            </svg>
+          </div>
+          <p className="text-sm text-gray-400 leading-relaxed">
+            Select a rectangle to edit its properties
+          </p>
+        </div>
+      </aside>
     );
   }
 
@@ -119,7 +126,6 @@ export default function PropertiesPanel({
     });
 
     if (result) {
-      // Refresh text fields from the server response (may have been re-extracted)
       const updated = result as RectangleData;
       if (updated.textFr !== undefined) setTextFr(updated.textFr || "");
       if (updated.textEn !== undefined) setTextEn(updated.textEn || "");
@@ -146,10 +152,8 @@ export default function PropertiesPanel({
         return;
       }
 
-      // Update text field with extracted text
       setTextFr(data.text || "");
 
-      // Also update parent state via onUpdate to sync UI
       if (data.rectangle) {
         await onUpdate(rectangle!.id, {
           textFr: data.text,
@@ -169,145 +173,167 @@ export default function PropertiesPanel({
   }
 
   return (
-    <div className="w-80 border-l border-gray-200 bg-white shrink-0 flex flex-col overflow-y-auto">
+    <aside className="w-80 xl:w-96 min-w-70 border-l border-gray-200 bg-white shrink-0 flex flex-col overflow-y-auto">
       {/* Header */}
-      <div className="p-3 border-b border-gray-100 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-800">Properties</h3>
+      <div className="px-4 py-3.5 border-b border-gray-200 flex items-center justify-between bg-gray-50/60 shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900 tracking-tight">Properties</h3>
         <button
           onClick={onDeselect}
-          className="text-gray-400 hover:text-gray-600 text-xs"
+          className="text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
         >
           Close
         </button>
       </div>
 
-      <div className="p-3 space-y-3 flex-1">
-        {/* ID */}
-        <div>
-          <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">
-            ID
-          </label>
-          <p className="text-xs font-mono text-gray-500 truncate">{rectangle.id}</p>
-        </div>
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 py-4 space-y-5">
 
-        {/* Position (read-only summary) */}
-        <div>
-          <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">
-            Position
-          </label>
-          <p className="text-xs text-gray-500">
-            Page {rectangle.page} — ({rectangle.x.toFixed(1)}, {rectangle.y.toFixed(1)}) {rectangle.width.toFixed(1)}x{rectangle.height.toFixed(1)}
-          </p>
-        </div>
+          {/* — Read-only metadata — */}
+          <div className="space-y-3 pb-4 border-b border-gray-100">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                ID
+              </label>
+              <p className="text-xs font-mono text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-100 truncate">
+                {rectangle.id}
+              </p>
+            </div>
 
-        {/* Type */}
-        <div>
-          <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">
-            Type
-          </label>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as RectangleType)}
-            className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            {RECTANGLE_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Parent */}
-        <div>
-          <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">
-            Parent
-          </label>
-          <ParentSelector
-            value={fatherId}
-            onChange={setFatherId}
-            possibleParents={possibleParents}
-            currentRectangle={rectangle}
-          />
-        </div>
-
-        {/* Labels */}
-        <div>
-          <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">
-            Labels <span className="font-normal">(comma-separated)</span>
-          </label>
-          <input
-            type="text"
-            value={labelsStr}
-            onChange={(e) => setLabelsStr(e.target.value)}
-            placeholder="e.g. civil, property, art-42"
-            className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-          {inheritedLabels.length > 0 && (
-            <p className="text-[10px] text-gray-400 mt-0.5">
-              Inherited: {inheritedLabels.join(", ")}
-            </p>
-          )}
-        </div>
-
-        {/* Text (FR) with re-extract button */}
-        <div>
-          <div className="flex items-center justify-between mb-0.5">
-            <label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">
-              Text (FR)
-            </label>
-            <button
-              type="button"
-              onClick={handleReExtract}
-              disabled={extracting}
-              className="px-1.5 py-0.5 text-[9px] font-medium rounded bg-indigo-50 text-indigo-600 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
-              title="Re-extract text from the current rectangle area on the PDF"
-            >
-              {extracting ? "Extracting..." : "Re-extract"}
-            </button>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Position
+              </label>
+              <p className="text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-100 leading-relaxed">
+                Page {rectangle.page} &mdash; ({rectangle.x.toFixed(1)}, {rectangle.y.toFixed(1)})
+                &ensp;{rectangle.width.toFixed(1)} &times; {rectangle.height.toFixed(1)}
+              </p>
+            </div>
           </div>
-          <textarea
-            value={textFr}
-            onChange={(e) => setTextFr(e.target.value)}
-            rows={3}
-            className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y"
-          />
-          {extractError && (
-            <p className="text-[10px] text-red-500 mt-0.5">{extractError}</p>
-          )}
-        </div>
 
-        <div>
-          <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">
-            Text (EN)
-          </label>
-          <textarea
-            value={textEn}
-            onChange={(e) => setTextEn(e.target.value)}
-            rows={2}
-            className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y"
-          />
-        </div>
+          {/* — Classification — */}
+          <div className="space-y-4 pb-4 border-b border-gray-100">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Type
+              </label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as RectangleType)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+              >
+                {RECTANGLE_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <div>
-          <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">
-            Text (NL)
-          </label>
-          <textarea
-            value={textNl}
-            onChange={(e) => setTextNl(e.target.value)}
-            rows={2}
-            className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y"
-          />
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Parent
+              </label>
+              <ParentSelector
+                value={fatherId}
+                onChange={setFatherId}
+                possibleParents={possibleParents}
+                currentRectangle={rectangle}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Labels{" "}
+                <span className="font-normal normal-case text-gray-400">
+                  (comma-separated)
+                </span>
+              </label>
+              <input
+                type="text"
+                value={labelsStr}
+                onChange={(e) => setLabelsStr(e.target.value)}
+                placeholder="e.g. civil, property, art-42"
+                className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+              />
+              {inheritedLabels.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1 items-center">
+                  <span className="text-xs text-gray-400 shrink-0">Inherited:</span>
+                  {inheritedLabels.map((label) => (
+                    <span
+                      key={label}
+                      className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* — Text content — */}
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Text (FR)
+                </label>
+                <button
+                  type="button"
+                  onClick={handleReExtract}
+                  disabled={extracting}
+                  className="px-2.5 py-1 text-xs font-medium rounded-md bg-indigo-50 text-indigo-600 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+                  title="Re-extract text from the current rectangle area on the PDF"
+                >
+                  {extracting ? "Extracting..." : "Re-extract"}
+                </button>
+              </div>
+              <textarea
+                value={textFr}
+                onChange={(e) => setTextFr(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-y"
+              />
+              {extractError && (
+                <p className="text-xs text-red-500 mt-1.5">{extractError}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Text (EN)
+              </label>
+              <textarea
+                value={textEn}
+                onChange={(e) => setTextEn(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-y"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Text (NL)
+              </label>
+              <textarea
+                value={textNl}
+                onChange={(e) => setTextNl(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-y"
+              />
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="p-3 border-t border-gray-100 space-y-2">
+      {/* Sticky action footer */}
+      <div className="px-4 py-4 border-t border-gray-200 space-y-2.5 shrink-0 bg-gray-50/60">
         <button
           onClick={handleSave}
           disabled={saving}
-          className={`w-full px-3 py-1.5 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 ${
+          className={`w-full px-4 py-2.5 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 ${
             saveSuccess
               ? "bg-green-600 hover:bg-green-700"
               : "bg-blue-600 hover:bg-blue-700"
@@ -317,11 +343,11 @@ export default function PropertiesPanel({
         </button>
         <button
           onClick={handleDeleteClick}
-          className="w-full px-3 py-1.5 bg-white text-red-600 text-xs font-medium rounded border border-red-200 hover:bg-red-50 transition-colors"
+          className="w-full px-4 py-2.5 bg-white text-red-600 text-sm font-medium rounded-md border border-red-200 hover:bg-red-50 transition-colors"
         >
           Delete Rectangle
         </button>
       </div>
-    </div>
+    </aside>
   );
 }

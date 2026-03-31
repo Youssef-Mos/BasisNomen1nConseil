@@ -56,21 +56,25 @@ export default function PdfEditor({ documentId, documentTitle, pageCount }: Prop
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Fetch all document rectangles (for parent selection dropdown)
+  // Fetch all document rectangles (for parent selection dropdown).
+  // Use pageSize=300 (API max) to load as many as possible in one request.
   const fetchAllRectangles = useCallback(async () => {
-    const res = await fetch(`/api/documents/${documentId}/rectangles`);
+    const res = await fetch(`/api/documents/${documentId}/rectangles?pageSize=300`);
     if (res.ok) {
       const data = await res.json();
-      setAllRectangles(data);
+      setAllRectangles(data.items ?? []);
     }
   }, [documentId]);
 
-  // Fetch rectangles for current page
+  // Fetch rectangles for the current PDF page.
+  // The API paginates results; we pass pdfPage to filter by page number.
   const fetchPageRectangles = useCallback(async () => {
-    const res = await fetch(`/api/documents/${documentId}/rectangles?page=${currentPage}`);
+    const res = await fetch(
+      `/api/documents/${documentId}/rectangles?pdfPage=${currentPage}&pageSize=300`
+    );
     if (res.ok) {
       const data = await res.json();
-      setRectangles(data);
+      setRectangles(data.items ?? []);
     }
   }, [documentId, currentPage]);
 

@@ -10,6 +10,56 @@ const execFileAsync = promisify(execFile);
 type RouteContext = { params: Promise<{ id: string }> };
 
 /**
+ * Generate a PNG crop for the given rectangle region.
+ * Saves to public/pdf-pages/{docId}/crops/{rectId}.png.
+ */
+async function generateCropForRect(
+  pdfPath: string,
+  docId: string,
+  rectId: string,
+  page: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): Promise<void> {
+  if (width < 0.1 || height < 0.1) return;
+
+  const pdfAbsPath = join(process.cwd(), pdfPath);
+  const outputPath = join(
+    process.cwd(),
+    "public",
+    "pdf-pages",
+    docId,
+    "crops",
+    `${rectId}.png`,
+  );
+  const scriptPath = join(process.cwd(), "python-pipeline", "crop_rectangle.py");
+
+  try {
+    await execFileAsync(
+      "python3",
+      [
+        scriptPath,
+        pdfAbsPath,
+        String(page),
+        String(x),
+        String(y),
+        String(width),
+        String(height),
+        outputPath,
+      ],
+      { timeout: 30_000 },
+    );
+  } catch (err) {
+    console.error(
+      `Crop generation failed for rect ${rectId}:`,
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
+
+/**
  * Extract text from a rectangle's zone in the PDF.
  * Returns the extracted text or null on failure.
  */
@@ -168,6 +218,27 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       children: { select: { id: true, type: true, labels: true, page: true } },
     },
   });
+
+  // Regenerate the crop image whenever geometry has changed.
+  // Wait for it to finish so frontend refresh sees the new image.
+  if (geometryChanged) {
+    const finalPage = (page ?? existing.page) as number;
+    const finalX = (x ?? existing.x) as number;
+    const finalY = (y ?? existing.y) as number;
+    const finalW = (width ?? existing.width) as number;
+    const finalH = (height ?? existing.height) as number;
+
+    await generateCropForRect(
+      existing.document.pdfPath,
+      existing.documentId,
+      id,
+      finalPage,
+      finalX,
+      finalY,
+      finalW,
+      finalH,
+    );
+  }
 
   return NextResponse.json(updated);
 }

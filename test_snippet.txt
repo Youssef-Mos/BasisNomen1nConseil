@@ -1,0 +1,23 @@
+import { useState } from "react";
+
+function TextPreview({ text, query }: { text: string; query?: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const words = text.trim().split(/\s+/);
+  const isLong = words.length > 40;
+  
+  const display = expanded ? text : (isLong ? words.slice(0, 40).join(" ") + "..." : text);
+
+  return (
+    <div className="text-xs text-gray-600 leading-relaxed font-serif">
+      <Highlight text={display} query={query || ""} />
+      {isLong && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+          className="ml-2 text-blue-500 hover:underline font-medium text-[11px]"
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
+    </div>
+  );
+}

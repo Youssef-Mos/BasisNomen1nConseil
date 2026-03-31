@@ -4,6 +4,31 @@ import { PDFDocument } from "pdf-lib";
 import { createHash } from "crypto";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
+
+async function renderPagesForDocument(
+  pdfPath: string,
+  docId: string,
+): Promise<void> {
+  const pdfAbsPath = join(process.cwd(), pdfPath);
+  const outputDir = join(process.cwd(), "public", "pdf-pages", docId);
+  const scriptPath = join(process.cwd(), "python-pipeline", "render_pages.py");
+  try {
+    await execFileAsync(
+      "python3",
+      [scriptPath, pdfAbsPath, outputDir],
+      { timeout: 300_000 }, // 5 min — large PDFs can be slow
+    );
+  } catch (err) {
+    console.error(
+      `Page rendering failed for doc ${docId}:`,
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
 
 // GET /api/documents — list all documents
 export async function GET() {
@@ -87,6 +112,9 @@ export async function POST(request: NextRequest) {
       pageCount,
     },
   });
+
+  // Render pages synchronously so the admin canvas can load them immediately.
+  await renderPagesForDocument(document.pdfPath, document.id);
 
   return NextResponse.json(
     {

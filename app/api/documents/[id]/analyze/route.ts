@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { execFile } from "child_process";
 import { join } from "path";
 import { promisify } from "util";
+import fs from "fs";
 
 const execFileAsync = promisify(execFile);
 
@@ -124,6 +125,40 @@ export async function POST(request: NextRequest, context: RouteContext) {
     where: { documentId: id },
     orderBy: [{ page: "asc" }, { y: "asc" }],
   });
+
+  // Fire-and-forget crop generation — do not await, response is already sent below.
+  // This runs in the background after the response is delivered.
+  void (async () => {
+    const cropScript = join(process.cwd(), "python-pipeline", "crop_rectangle.py");
+    const pdfAbsPath = join(process.cwd(), doc.pdfPath);
+
+    // Also render pages if they are missing (e.g. doc was uploaded without rendering).
+    const pagesDir = join(process.cwd(), "public", "pdf-pages", id);
+    const page1 = join(pagesDir, "page-001.png");
+    if (!fs.existsSync(page1)) {
+      const renderScript = join(process.cwd(), "python-pipeline", "render_pages.py");
+      try {
+        await execFileAsync("python3", [renderScript, pdfAbsPath, pagesDir], { timeout: 300_000 });
+      } catch (err) {
+        console.error("Background page render failed:", err instanceof Error ? err.message : err);
+      }
+    }
+
+    for (const rect of rectangles) {
+      if (rect.width < 0.1 || rect.height < 0.1) continue;
+      const outputPath = join(pagesDir, "crops", `${rect.id}.png`);
+      try {
+        await execFileAsync(
+          "python3",
+          [cropScript, pdfAbsPath, String(rect.page), String(rect.x), String(rect.y), String(rect.width), String(rect.height), outputPath],
+          { timeout: 30_000 },
+        );
+      } catch (err) {
+        console.error(`Background crop failed for ${rect.id}:`, err instanceof Error ? err.message : err);
+      }
+    }
+    console.log(`Background crop generation finished for doc ${id}: ${rectangles.length} rects.`);
+  })();
 
   return NextResponse.json({
     created: indexToId.size,

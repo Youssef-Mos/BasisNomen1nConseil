@@ -17,24 +17,6 @@ function truncate(text: string, max: number): string {
   return text.slice(0, max).trimEnd() + "...";
 }
 
-/** Build a human-readable label for a rectangle */
-function formatLabel(r: RectangleData): { primary: string; secondary: string } {
-  const typeName = r.type.charAt(0).toUpperCase() + r.type.slice(1);
-  const textPreview = r.textFr ? truncate(r.textFr.replace(/\s+/g, " "), 60) : "";
-
-  let primary = typeName;
-  if (textPreview) {
-    // Use the first meaningful line as the primary label
-    const firstLine = textPreview.split(/[.\n]/)[0].trim();
-    if (firstLine.length > 3) {
-      primary = `${typeName} — ${firstLine}`;
-    }
-  }
-
-  const secondary = `Page ${r.page}`;
-  return { primary: truncate(primary, 80), secondary };
-}
-
 /** Color for type badge */
 const TYPE_BADGE_COLORS: Record<string, string> = {
   phrase: "bg-blue-100 text-blue-700",
@@ -88,12 +70,10 @@ export default function ParentSelector({
   const filtered = useMemo(() => {
     let list = possibleParents;
 
-    // Type filter
     if (typeFilter) {
       list = list.filter((r) => r.type === typeFilter);
     }
 
-    // Text search
     if (search.trim()) {
       const q = search.toLowerCase().trim();
       list = list.filter((r) => {
@@ -111,7 +91,6 @@ export default function ParentSelector({
       });
     }
 
-    // Sort: page asc, then y asc
     return [...list].sort((a, b) => {
       if (a.page !== b.page) return a.page - b.page;
       return a.y - b.y;
@@ -143,12 +122,12 @@ export default function ParentSelector({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs text-left focus:outline-none focus:ring-1 focus:ring-blue-500 hover:border-gray-300 transition-colors bg-white"
+        className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-300 transition-colors bg-white"
       >
         {currentParent ? (
-          <span className="flex items-center gap-1.5 min-w-0">
+          <span className="flex items-center gap-2 min-w-0">
             <span
-              className={`shrink-0 px-1 py-0.5 rounded text-[9px] font-medium ${
+              className={`shrink-0 px-1.5 py-0.5 rounded text-xs font-medium ${
                 TYPE_BADGE_COLORS[currentParent.type] || "bg-gray-100 text-gray-600"
               }`}
             >
@@ -157,37 +136,37 @@ export default function ParentSelector({
             <span className="truncate text-gray-800">
               {currentParent.textFr
                 ? truncate(currentParent.textFr.replace(/\s+/g, " "), 40)
-                : `(no text)`}
+                : "(no text)"}
             </span>
-            <span className="shrink-0 text-gray-400 ml-auto">p.{currentParent.page}</span>
+            <span className="shrink-0 text-gray-400 ml-auto text-xs">
+              p.{currentParent.page}
+            </span>
           </span>
         ) : (
           <span className="text-gray-400">None (root)</span>
         )}
       </button>
 
-      {/* Dropdown panel */}
+      {/* Dropdown panel — full width of the sidebar content area */}
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-xl flex flex-col"
-          style={{ maxHeight: 420, width: 360, marginLeft: -44 }}
-        >
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-xl flex flex-col max-h-105">
           {/* Search bar */}
-          <div className="p-2 border-b border-gray-100">
+          <div className="p-2.5 border-b border-gray-100 shrink-0">
             <input
               ref={searchRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by text, article number, page..."
-              className="w-full px-2.5 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           {/* Type filter chips */}
-          <div className="px-2 py-1.5 border-b border-gray-100 flex flex-wrap gap-1">
+          <div className="px-2.5 py-2 border-b border-gray-100 flex flex-wrap gap-1.5 shrink-0">
             <button
               onClick={() => setTypeFilter("")}
-              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 typeFilter === ""
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-500 hover:bg-gray-200"
@@ -199,7 +178,7 @@ export default function ParentSelector({
               <button
                 key={t}
                 onClick={() => setTypeFilter(typeFilter === t ? "" : t)}
-                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   typeFilter === t
                     ? "bg-blue-600 text-white"
                     : `${TYPE_BADGE_COLORS[t] || "bg-gray-100 text-gray-500"} hover:opacity-80`
@@ -213,7 +192,7 @@ export default function ParentSelector({
           {/* "None (root)" option */}
           <button
             onClick={handleClear}
-            className={`px-3 py-2 text-left text-xs border-b border-gray-50 hover:bg-gray-50 transition-colors ${
+            className={`px-3 py-2.5 text-left text-sm border-b border-gray-100 hover:bg-gray-50 transition-colors shrink-0 ${
               !value ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-500"
             }`}
           >
@@ -223,12 +202,11 @@ export default function ParentSelector({
           {/* Results list */}
           <div className="flex-1 overflow-y-auto">
             {filtered.length === 0 ? (
-              <div className="p-4 text-center text-xs text-gray-400">
+              <div className="p-5 text-center text-sm text-gray-400">
                 No matching rectangles found
               </div>
             ) : (
               filtered.map((r) => {
-                const { primary, secondary } = formatLabel(r);
                 const isSelected = r.id === value;
                 const isSamePage = r.page === currentRectangle.page;
 
@@ -236,14 +214,14 @@ export default function ParentSelector({
                   <button
                     key={r.id}
                     onClick={() => handleSelect(r.id)}
-                    className={`w-full px-3 py-2 text-left border-b border-gray-50 hover:bg-blue-50 transition-colors ${
+                    className={`w-full px-3 py-2.5 text-left border-b border-gray-50 hover:bg-blue-50 transition-colors ${
                       isSelected ? "bg-blue-50 ring-1 ring-inset ring-blue-200" : ""
                     }`}
                   >
-                    <div className="flex items-start gap-1.5">
+                    <div className="flex items-start gap-2">
                       {/* Type badge */}
                       <span
-                        className={`shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold ${
+                        className={`shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-xs font-semibold ${
                           TYPE_BADGE_COLORS[r.type] || "bg-gray-100 text-gray-600"
                         }`}
                       >
@@ -251,24 +229,30 @@ export default function ParentSelector({
                       </span>
 
                       <div className="min-w-0 flex-1">
-                        {/* Primary label (type + first line of text) */}
-                        <div className="text-[11px] text-gray-800 leading-tight">
+                        {/* Text preview */}
+                        <div className="text-xs text-gray-800 leading-snug">
                           {r.textFr
                             ? truncate(r.textFr.replace(/\s+/g, " "), 70)
                             : "(no text)"}
                         </div>
 
                         {/* Metadata row */}
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className={`text-[10px] ${isSamePage ? "text-green-600 font-medium" : "text-gray-400"}`}>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className={`text-xs ${
+                              isSamePage
+                                ? "text-green-600 font-medium"
+                                : "text-gray-400"
+                            }`}
+                          >
                             Page {r.page}
                           </span>
                           {r.labels.length > 0 && (
-                            <span className="text-[10px] text-gray-400 truncate">
+                            <span className="text-xs text-gray-400 truncate">
                               {r.labels.join(", ")}
                             </span>
                           )}
-                          <span className="text-[9px] text-gray-300 ml-auto font-mono">
+                          <span className="text-xs text-gray-300 ml-auto font-mono">
                             {r.id.slice(-6)}
                           </span>
                         </div>
@@ -276,7 +260,7 @@ export default function ParentSelector({
 
                       {/* Selection indicator */}
                       {isSelected && (
-                        <span className="shrink-0 mt-1 w-2 h-2 rounded-full bg-blue-500" />
+                        <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-blue-500" />
                       )}
                     </div>
                   </button>
@@ -286,7 +270,7 @@ export default function ParentSelector({
           </div>
 
           {/* Footer count */}
-          <div className="px-3 py-1.5 border-t border-gray-100 text-[10px] text-gray-400 text-center">
+          <div className="px-3 py-2 border-t border-gray-100 text-xs text-gray-400 text-center shrink-0">
             {filtered.length} of {possibleParents.length} candidates
           </div>
         </div>
