@@ -358,8 +358,8 @@ export default function PdfCanvas({
         <canvas ref={canvasRef} className="block" />
 
         {pdfLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/80">
-            <span className="text-sm text-gray-500">Loading page...</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-900/80">
+            <span className="text-sm text-(--text-muted)">Loading page...</span>
           </div>
         )}
 

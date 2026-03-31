@@ -12,7 +12,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Anti-flash: apply dark class before first paint */}
+        <script dangerouslySetInnerHTML={{ __html: `try{const t=localStorage.getItem('theme');const sys=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&sys))document.documentElement.classList.add('dark')}catch(e){}` }} />
+      </head>
       <body className="antialiased">{children}</body>
     </html>
   );

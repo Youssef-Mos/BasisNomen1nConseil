@@ -60,21 +60,21 @@ const ROOM_OPTIONS = [
 // ─── Shared input styles ──────────────────────────────────────────────────────
 
 const INPUT =
-  "w-full h-10 px-3.5 text-sm border border-gray-200/60 rounded-xl bg-white " +
+  "w-full h-10 px-3.5 text-sm border border-[var(--border-default)] rounded-xl bg-[var(--bg-surface)] " +
   "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 " +
-  "text-gray-800 placeholder:text-gray-400 transition-all shadow-sm";
+  "text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all shadow-sm";
 
 const SELECT =
-  "w-full h-10 px-3.5 text-sm border border-gray-200/60 rounded-xl bg-white " +
+  "w-full h-10 px-3.5 text-sm border border-[var(--border-default)] rounded-xl bg-[var(--bg-surface)] " +
   "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 " +
-  "text-gray-800 transition-all appearance-none cursor-pointer shadow-sm";
+  "text-[var(--text-primary)] transition-all appearance-none cursor-pointer shadow-sm";
 
 // ─── Section card ─────────────────────────────────────────────────────────────
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100/50 shadow-sm p-6 space-y-4">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+    <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm p-6 space-y-4">
+      <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
         {title}
       </p>
       <div className="space-y-4">
@@ -89,7 +89,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-[13px] font-medium text-gray-600">{label}</label>
+      <label className="block text-[13px] font-medium text-[var(--text-secondary)]">{label}</label>
       {children}
     </div>
   );
@@ -101,7 +101,7 @@ function SelectWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative">
       {children}
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
         <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 9l6 6 6-6" />
         </svg>
@@ -142,12 +142,12 @@ export default function FilterSidebar({ pending, applied, allLabels, onChange, o
   }
 
   return (
-    <aside className="w-80 shrink-0 flex flex-col bg-gray-50 border-r border-gray-100 overflow-hidden">
+    <aside className="w-80 shrink-0 flex flex-col bg-[var(--bg-page)] border-r border-[var(--border-default)] overflow-hidden">
 
       {/* ── Header ── */}
       <div className="shrink-0 px-6 pt-8 pb-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900 tracking-tight">Filters</h2>
+          <h2 className="text-base font-semibold text-[var(--text-primary)] tracking-tight">Filters</h2>
           {isActive && (
             <button
               onClick={onClear}
@@ -157,7 +157,7 @@ export default function FilterSidebar({ pending, applied, allLabels, onChange, o
             </button>
           )}
         </div>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-[var(--text-secondary)] mt-1">
           Refine by keywords and metadata
         </p>
       </div>
@@ -170,7 +170,7 @@ export default function FilterSidebar({ pending, applied, allLabels, onChange, o
           <Section title="Search">
             <div className="relative">
               <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
                   <circle cx="11" cy="11" r="8" />
                   <path d="M21 21l-4.35-4.35" />
                 </svg>
@@ -248,8 +248,8 @@ export default function FilterSidebar({ pending, applied, allLabels, onChange, o
 
           {/* ── Active filter pills ───────────────────────────────────── */}
           {isActive && (
-            <div className="bg-white rounded-2xl border border-gray-100/50 shadow-sm p-6 space-y-3">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm p-6 space-y-3">
+              <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
                 Active filters
               </p>
               <div className="flex flex-wrap gap-2">
@@ -258,9 +258,9 @@ export default function FilterSidebar({ pending, applied, allLabels, onChange, o
                   return (
                     <span
                       key={key}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50/50 border border-blue-100/50 text-blue-700 text-xs font-medium"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50/50 dark:bg-blue-950/40 border border-blue-100/50 dark:border-blue-900/50 text-blue-700 dark:text-blue-400 text-xs font-medium"
                     >
-                      <span className="text-blue-500 shrink-0">{FILTER_LABELS[key]}:</span>
+                      <span className="text-blue-500 dark:text-blue-400 shrink-0">{FILTER_LABELS[key]}:</span>
                       <span className="truncate max-w-[140px]">{val}</span>
                     </span>
                   );
@@ -273,15 +273,15 @@ export default function FilterSidebar({ pending, applied, allLabels, onChange, o
       </div>
 
       {/* ── Sticky footer ── */}
-      <div className="shrink-0 px-6 py-5 border-t border-gray-100 bg-white space-y-3">
+      <div className="shrink-0 px-6 py-5 border-t border-[var(--border-default)] bg-[var(--bg-surface)] space-y-3">
         <button
           onClick={onApply}
           className={`w-full h-10 text-[13px] font-semibold rounded-xl transition-all ${
             isDirty
               ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm ring-1 ring-blue-700/50"
               : isActive
-              ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              : "bg-gray-900 text-white hover:bg-gray-800 shadow-sm ring-1 ring-gray-900/50"
+              ? "bg-[var(--bg-surface-2)] text-[var(--text-primary)] hover:bg-[var(--border-default)]"
+              : "bg-[var(--text-primary)] text-[var(--bg-page)] hover:opacity-90 shadow-sm"
           }`}
         >
           {isDirty ? "Apply filters" : isActive ? "✓ Filters applied" : "Apply filters"}
@@ -289,7 +289,7 @@ export default function FilterSidebar({ pending, applied, allLabels, onChange, o
         {(isActive || isDirty) && (
           <button
             onClick={onClear}
-            className="w-full h-9 text-[13px] text-gray-500 hover:text-gray-900 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+            className="w-full h-9 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-2)] transition-colors font-medium"
           >
             Reset all
           </button>

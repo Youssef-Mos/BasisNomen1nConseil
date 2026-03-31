@@ -52,14 +52,14 @@ export default function RectCrop({
       }
     : {};
 
-  const wrapCls = `bg-gray-50 flex items-center justify-center overflow-hidden ${onClick ? "cursor-zoom-in" : ""}`;
+  const wrapCls = `bg-(--bg-page) flex items-center justify-center overflow-hidden ${onClick ? "cursor-zoom-in" : ""}`;
 
   // Both sources failed
   if (cropFailed && pageFailed) {
     return (
       <div className={`${wrapCls} py-8 gap-2 flex-col`} {...clickProps}>
         <svg
-          className="w-5 h-5 text-gray-300"
+          className="w-5 h-5 text-(--text-muted)"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -68,14 +68,14 @@ export default function RectCrop({
           <rect x="3" y="3" width="18" height="18" rx="2" />
           <path d="M3 9l4-4 4 4 4-4 4 4" />
         </svg>
-        <span className="text-xs text-gray-400">Image unavailable</span>
+        <span className="text-xs text-(--text-muted)">Image unavailable</span>
       </div>
     );
   }
 
   const spinner = (
     <div className="flex items-center justify-center py-8">
-      <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-400 rounded-full animate-spin" />
+      <div className="w-4 h-4 border-2 border-(--border-default) border-t-blue-400 rounded-full animate-spin" />
     </div>
   );
 
@@ -114,7 +114,7 @@ export default function RectCrop({
         width: "100%",
         paddingBottom: thumb ? `min(${pb}, 13rem)` : pb,
       }}
-      className={`bg-gray-50 flex items-center justify-center ${onClick ? "cursor-zoom-in" : ""}`}
+      className={`bg-(--bg-page) flex items-center justify-center ${onClick ? "cursor-zoom-in" : ""}`}
       {...clickProps}
     >
       {!loaded && (

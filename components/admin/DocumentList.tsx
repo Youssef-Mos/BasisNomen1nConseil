@@ -80,7 +80,7 @@ export default function DocumentList() {
   return (
     <div className="p-6 max-w-4xl mx-auto w-full">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Documents</h1>
+        <h1 className="text-xl font-semibold text-(--text-primary)">Documents</h1>
         <button
           onClick={() => setShowUpload(!showUpload)}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
@@ -93,10 +93,10 @@ export default function DocumentList() {
       {showUpload && (
         <form
           onSubmit={handleUpload}
-          className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3"
+          className="mb-6 p-4 bg-(--bg-page) border border-(--border-default) rounded-lg space-y-3"
         >
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-(--text-primary) mb-1">
               Document Title
             </label>
             <input
@@ -104,19 +104,19 @@ export default function DocumentList() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Code Civil 2024"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-(--text-primary) mb-1">
               PDF File
             </label>
             <input
               type="file"
               accept="application/pdf"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              className="w-full text-sm text-(--text-secondary) file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950/30 dark:file:text-blue-300"
               required
             />
           </div>
@@ -133,9 +133,9 @@ export default function DocumentList() {
 
       {/* Document list */}
       {loading ? (
-        <div className="text-sm text-gray-500">Loading documents...</div>
+        <div className="text-sm text-(--text-muted)">Loading documents...</div>
       ) : documents.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-(--text-muted)">
           <p className="text-lg mb-2">No documents yet</p>
           <p className="text-sm">Upload a PDF to get started.</p>
         </div>
@@ -145,13 +145,13 @@ export default function DocumentList() {
             <a
               key={doc.id}
               href={`/admin/documents/${doc.id}`}
-              className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all group"
+              className="flex items-center justify-between p-4 bg-(--bg-surface) border border-(--border-default) rounded-lg hover:border-blue-300 hover:shadow-sm transition-all group"
             >
               <div>
-                <h2 className="font-medium text-gray-900 group-hover:text-blue-600">
+                <h2 className="font-medium text-(--text-primary) group-hover:text-blue-600">
                   {doc.title}
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-(--text-muted) mt-1">
                   {doc.pageCount} pages &middot; {doc.rectangleCount} rectangles &middot;{" "}
                   {new Date(doc.createdAt).toLocaleDateString("en-US")}
                 </p>
@@ -164,7 +164,7 @@ export default function DocumentList() {
                 >
                   Delete
                 </button>
-                <span className="text-gray-400 group-hover:text-blue-500 text-sm">
+                <span className="text-(--text-muted) group-hover:text-blue-500 text-sm">
                   Open &rarr;
                 </span>
               </div>

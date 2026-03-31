@@ -211,7 +211,7 @@ export default function PdfEditor({ documentId, documentTitle, pageCount }: Prop
       {/* Main content */}
       <div className="flex-1 flex min-h-0">
         {/* PDF canvas area */}
-        <div className="flex-1 overflow-auto bg-gray-100">
+        <div className="flex-1 overflow-auto bg-(--bg-page)">
           <PdfCanvas
             pdfUrl={pdfUrl}
             page={currentPage}

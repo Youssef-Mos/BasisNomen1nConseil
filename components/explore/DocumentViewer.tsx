@@ -19,17 +19,7 @@ export type { RectClient };
 
 function ArrowLeftIcon() {
   return (
-    <svg
-      width={14}
-      height={14}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ flexShrink: 0 }}
-    >
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
       <path d="M10 19l-7-7m0 0l7-7m-7 7h18" />
     </svg>
   );
@@ -37,15 +27,7 @@ function ArrowLeftIcon() {
 
 function DocIcon() {
   return (
-    <svg
-      className="w-4 h-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
   );
@@ -53,15 +35,7 @@ function DocIcon() {
 
 function BlockIcon() {
   return (
-    <svg
-      className="w-4 h-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -72,15 +46,7 @@ function BlockIcon() {
 
 function SearchEmptyIcon() {
   return (
-    <svg
-      className="w-6 h-6 text-gray-300"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg className="w-6 h-6 text-[var(--text-muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
       <path d="M21 21l-4.35-4.35" />
     </svg>
@@ -155,13 +121,13 @@ export default function DocumentViewer({
     if (!isFiltered) return;
 
     const params = new URLSearchParams();
-    if (appliedFilters.search)             params.set("keywords",            appliedFilters.search);
-    if (appliedFilters.topic)              params.set("topic",               appliedFilters.topic);
-    if (appliedFilters.projectAddress)     params.set("projectAddress",      appliedFilters.projectAddress);
-    if (appliedFilters.permitDate)         params.set("permitDate",          appliedFilters.permitDate);
-    if (appliedFilters.buildingHeightType) params.set("buildingHeightType",  appliedFilters.buildingHeightType);
-    if (appliedFilters.compartmentCategory) params.set("compartmentCategory", appliedFilters.compartmentCategory);
-    if (appliedFilters.roomCategory)       params.set("roomCategory",        appliedFilters.roomCategory);
+    if (appliedFilters.search)              params.set("keywords",             appliedFilters.search);
+    if (appliedFilters.topic)               params.set("topic",                appliedFilters.topic);
+    if (appliedFilters.projectAddress)      params.set("projectAddress",       appliedFilters.projectAddress);
+    if (appliedFilters.permitDate)          params.set("permitDate",           appliedFilters.permitDate);
+    if (appliedFilters.buildingHeightType)  params.set("buildingHeightType",   appliedFilters.buildingHeightType);
+    if (appliedFilters.compartmentCategory) params.set("compartmentCategory",  appliedFilters.compartmentCategory);
+    if (appliedFilters.roomCategory)        params.set("roomCategory",         appliedFilters.roomCategory);
     params.set("page", String(resultPage));
     params.set("pageSize", "60");
 
@@ -188,7 +154,7 @@ export default function DocumentViewer({
   }, [appliedFilters, doc.id, isFiltered, resultPage]);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col bg-gray-50 antialiased">
+    <div className="flex-1 min-h-0 flex flex-col bg-[var(--bg-page)] antialiased">
 
       {/* Lightbox */}
       {lightboxRect && (
@@ -196,54 +162,58 @@ export default function DocumentViewer({
       )}
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="shrink-0 bg-white border-b border-gray-100/80 shadow-[0_1px_12px_rgba(0,0,0,0.04)] relative z-10">
+      <header className="shrink-0 bg-[var(--bg-surface)] border-b border-[var(--border-default)] shadow-[0_1px_12px_rgba(0,0,0,0.04)] relative z-10">
         <div className="max-w-[1680px] mx-auto px-8">
 
-          {/* Nav + Lang row */}
+          {/* Nav + Lang + ThemeToggle row */}
           <div className="flex items-center justify-between py-4">
             <a
               href="/explore"
-              className="group inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-all -ml-1 px-3 py-2 rounded-xl hover:bg-gray-100/80"
+              className="group inline-flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all -ml-1 px-3 py-2 rounded-xl hover:bg-[var(--bg-surface-2)]"
             >
-              <span className="text-gray-400 group-hover:text-gray-700 transition-colors">
+              <span className="text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors">
                 <ArrowLeftIcon />
               </span>
               Back to Documents
             </a>
 
-            <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-full border border-gray-100/50">
-              {(["fr", "en", "nl"] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  className={`px-5 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-full transition-all duration-200 ${
-                    lang === l
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-400 hover:text-gray-700"
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
+            <div className="flex items-center gap-3">
+              {/* Language selector */}
+              <div className="flex items-center gap-1 bg-[var(--bg-page)] p-1 rounded-full border border-[var(--border-default)]">
+                {(["fr", "en", "nl"] as Lang[]).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setLang(l)}
+                    className={`px-5 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-full transition-all duration-200 ${
+                      lang === l
+                        ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+
             </div>
           </div>
 
           {/* Title + Meta row */}
           <div className="flex items-center justify-between gap-6 pb-6">
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-gray-900 tracking-tight truncate">
+              <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight truncate">
                 {doc.title}
               </h1>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              <div className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200/60 rounded-xl px-3.5 py-1.5 text-sm text-gray-500">
+              <div className="inline-flex items-center gap-1.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-xl px-3.5 py-1.5 text-sm text-[var(--text-secondary)]">
                 <DocIcon />
-                <span className="font-semibold text-gray-800 tabular-nums">{doc.pageCount}</span>
+                <span className="font-semibold text-[var(--text-primary)] tabular-nums">{doc.pageCount}</span>
                 <span>pages</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200/60 rounded-xl px-3.5 py-1.5 text-sm text-gray-500">
+              <div className="inline-flex items-center gap-1.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-xl px-3.5 py-1.5 text-sm text-[var(--text-secondary)]">
                 <BlockIcon />
-                <span className="font-semibold text-gray-800 tabular-nums">{rectangles.length}</span>
+                <span className="font-semibold text-[var(--text-primary)] tabular-nums">{rectangles.length}</span>
                 <span>blocks</span>
               </div>
             </div>
@@ -253,7 +223,7 @@ export default function DocumentViewer({
       </header>
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 flex overflow-hidden bg-gray-50">
+      <div className="flex-1 min-h-0 flex overflow-hidden bg-[var(--bg-page)]">
 
         {/* Sidebar */}
         <FilterSidebar
@@ -273,33 +243,33 @@ export default function DocumentViewer({
               /* ── Filter results ────────────────────────────────────────── */
               <div>
                 <div className="flex items-center justify-between mb-6">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
+                  <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-widest">
                     {loading && resultPage === 1
                       ? "Loading…"
                       : `${totalResults} result${totalResults !== 1 ? "s" : ""}`}
                   </p>
                   <button
                     onClick={handleClear}
-                    className="text-xs font-medium text-gray-400 hover:text-red-600 transition-colors"
+                    className="text-xs font-medium text-[var(--text-muted)] hover:text-red-600 transition-colors"
                   >
                     Clear filters
                   </button>
                 </div>
 
                 {error && (
-                  <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5">
+                  <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl px-4 py-3 mb-5">
                     {error}
                   </div>
                 )}
 
                 {loading && resultPage === 1 ? (
-                  <div className="py-24 text-center text-sm text-gray-400">Loading results…</div>
+                  <div className="py-24 text-center text-sm text-[var(--text-muted)]">Loading results…</div>
                 ) : results.length === 0 ? (
                   <div className="py-24 flex flex-col items-center gap-4 text-center">
-                    <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
+                    <div className="w-14 h-14 rounded-2xl bg-[var(--bg-surface-2)] flex items-center justify-center">
                       <SearchEmptyIcon />
                     </div>
-                    <p className="text-sm text-gray-500">No results match your filters.</p>
+                    <p className="text-sm text-[var(--text-secondary)]">No results match your filters.</p>
                     <button
                       onClick={handleClear}
                       className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
@@ -326,7 +296,7 @@ export default function DocumentViewer({
                       <button
                         onClick={() => setResultPage((p) => p + 1)}
                         disabled={loading}
-                        className="w-full mt-8 py-3.5 text-sm font-semibold text-blue-700 bg-blue-50/50 border border-blue-100 rounded-2xl hover:bg-blue-50 transition-colors disabled:opacity-50"
+                        className="w-full mt-8 py-3.5 text-sm font-semibold text-blue-700 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors disabled:opacity-50"
                       >
                         {loading ? "Loading…" : "Load more results"}
                       </button>
@@ -337,13 +307,13 @@ export default function DocumentViewer({
             ) : (
               /* ── Accordion tree ────────────────────────────────────────── */
               <div className="min-w-0 overflow-x-hidden">
-                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-5">
+                <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-5">
                   {roots.length} top-level element{roots.length !== 1 ? "s" : ""}
                 </p>
 
                 <div className="flex flex-col gap-3">
                   {roots.length === 0 ? (
-                    <p className="py-20 text-center text-sm text-gray-400">
+                    <p className="py-20 text-center text-sm text-[var(--text-muted)]">
                       No content blocks found in this document.
                     </p>
                   ) : (

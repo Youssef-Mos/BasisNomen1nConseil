@@ -10,7 +10,7 @@ export default function TextPreview({ text, query }: { text: string; query?: str
   const display = expanded ? text : (isLong ? words.slice(0, 30).join(" ") + "…" : text);
 
   return (
-    <div className="text-sm text-gray-600 leading-relaxed">
+    <div className="text-sm text-(--text-secondary) leading-relaxed">
       <Highlight text={display} query={query || ""} />
       {isLong && (
         <button

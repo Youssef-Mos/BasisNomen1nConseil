@@ -49,14 +49,14 @@ export default function PropertiesPanel({
 
   if (!rectangle) {
     return (
-      <aside className="w-80 xl:w-96 min-w-70 border-l border-gray-200 bg-white shrink-0 flex flex-col items-center justify-center p-8">
+      <aside className="w-80 xl:w-96 min-w-70 border-l border-(--border-default) bg-(--bg-surface) shrink-0 flex flex-col items-center justify-center p-8">
         <div className="text-center space-y-2">
-          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="w-10 h-10 rounded-full bg-(--bg-surface-2) flex items-center justify-center mx-auto">
+            <svg className="w-5 h-5 text-(--text-muted)" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
             </svg>
           </div>
-          <p className="text-sm text-gray-400 leading-relaxed">
+          <p className="text-sm text-(--text-muted) leading-relaxed">
             Select a rectangle to edit its properties
           </p>
         </div>
@@ -173,13 +173,13 @@ export default function PropertiesPanel({
   }
 
   return (
-    <aside className="w-80 xl:w-96 min-w-70 border-l border-gray-200 bg-white shrink-0 flex flex-col overflow-y-auto">
+    <aside className="w-80 xl:w-96 min-w-70 border-l border-(--border-default) bg-(--bg-surface) shrink-0 flex flex-col overflow-y-auto">
       {/* Header */}
-      <div className="px-4 py-3.5 border-b border-gray-200 flex items-center justify-between bg-gray-50/60 shrink-0">
-        <h3 className="text-sm font-semibold text-gray-900 tracking-tight">Properties</h3>
+      <div className="px-4 py-3.5 border-b border-(--border-default) flex items-center justify-between bg-(--bg-page) shrink-0">
+        <h3 className="text-sm font-semibold text-(--text-primary) tracking-tight">Properties</h3>
         <button
           onClick={onDeselect}
-          className="text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
+          className="text-xs text-(--text-muted) hover:text-(--text-primary) px-2 py-1 rounded hover:bg-(--bg-surface-2) transition-colors"
         >
           Close
         </button>
@@ -190,21 +190,21 @@ export default function PropertiesPanel({
         <div className="px-4 py-4 space-y-5">
 
           {/* — Read-only metadata — */}
-          <div className="space-y-3 pb-4 border-b border-gray-100">
+          <div className="space-y-3 pb-4 border-b border-(--border-default)">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-(--text-secondary) uppercase tracking-wide mb-1.5">
                 ID
               </label>
-              <p className="text-xs font-mono text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-100 truncate">
+              <p className="text-xs font-mono text-(--text-secondary) bg-(--bg-page) px-2.5 py-1.5 rounded-md border border-(--border-default) truncate">
                 {rectangle.id}
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-(--text-secondary) uppercase tracking-wide mb-1.5">
                 Position
               </label>
-              <p className="text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-100 leading-relaxed">
+              <p className="text-xs text-(--text-secondary) bg-(--bg-page) px-2.5 py-1.5 rounded-md border border-(--border-default) leading-relaxed">
                 Page {rectangle.page} &mdash; ({rectangle.x.toFixed(1)}, {rectangle.y.toFixed(1)})
                 &ensp;{rectangle.width.toFixed(1)} &times; {rectangle.height.toFixed(1)}
               </p>
@@ -212,15 +212,15 @@ export default function PropertiesPanel({
           </div>
 
           {/* — Classification — */}
-          <div className="space-y-4 pb-4 border-b border-gray-100">
+          <div className="space-y-4 pb-4 border-b border-(--border-default)">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-(--text-secondary) uppercase tracking-wide mb-1.5">
                 Type
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as RectangleType)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
               >
                 {RECTANGLE_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -231,7 +231,7 @@ export default function PropertiesPanel({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-(--text-secondary) uppercase tracking-wide mb-1.5">
                 Parent
               </label>
               <ParentSelector
@@ -243,9 +243,9 @@ export default function PropertiesPanel({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-(--text-secondary) uppercase tracking-wide mb-1.5">
                 Labels{" "}
-                <span className="font-normal normal-case text-gray-400">
+                <span className="font-normal normal-case text-(--text-muted)">
                   (comma-separated)
                 </span>
               </label>
@@ -254,15 +254,15 @@ export default function PropertiesPanel({
                 value={labelsStr}
                 onChange={(e) => setLabelsStr(e.target.value)}
                 placeholder="e.g. civil, property, art-42"
-                className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
               />
               {inheritedLabels.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1 items-center">
-                  <span className="text-xs text-gray-400 shrink-0">Inherited:</span>
+                  <span className="text-xs text-(--text-muted) shrink-0">Inherited:</span>
                   {inheritedLabels.map((label) => (
                     <span
                       key={label}
-                      className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full"
+                      className="text-xs px-2 py-0.5 bg-(--bg-surface-2) text-(--text-secondary) rounded-full"
                     >
                       {label}
                     </span>
@@ -276,7 +276,7 @@ export default function PropertiesPanel({
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <label className="text-xs font-semibold text-(--text-secondary) uppercase tracking-wide">
                   Text (FR)
                 </label>
                 <button
@@ -293,7 +293,7 @@ export default function PropertiesPanel({
                 value={textFr}
                 onChange={(e) => setTextFr(e.target.value)}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-y"
+                className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-y"
               />
               {extractError && (
                 <p className="text-xs text-red-500 mt-1.5">{extractError}</p>
@@ -301,26 +301,26 @@ export default function PropertiesPanel({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-(--text-secondary) uppercase tracking-wide mb-1.5">
                 Text (EN)
               </label>
               <textarea
                 value={textEn}
                 onChange={(e) => setTextEn(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-y"
+                className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-y"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-(--text-secondary) uppercase tracking-wide mb-1.5">
                 Text (NL)
               </label>
               <textarea
                 value={textNl}
                 onChange={(e) => setTextNl(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-y"
+                className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-y"
               />
             </div>
           </div>
@@ -329,7 +329,7 @@ export default function PropertiesPanel({
       </div>
 
       {/* Sticky action footer */}
-      <div className="px-4 py-4 border-t border-gray-200 space-y-2.5 shrink-0 bg-gray-50/60">
+      <div className="px-4 py-4 border-t border-(--border-default) space-y-2.5 shrink-0 bg-(--bg-page)">
         <button
           onClick={handleSave}
           disabled={saving}
@@ -343,7 +343,7 @@ export default function PropertiesPanel({
         </button>
         <button
           onClick={handleDeleteClick}
-          className="w-full px-4 py-2.5 bg-white text-red-600 text-sm font-medium rounded-md border border-red-200 hover:bg-red-50 transition-colors"
+          className="w-full px-4 py-2.5 bg-(--bg-surface) text-red-600 text-sm font-medium rounded-md border border-red-200 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30 transition-colors"
         >
           Delete Rectangle
         </button>

@@ -62,7 +62,7 @@ export default function TreeNode({
     <div
       className={
         level === 0
-          ? "rounded-2xl overflow-hidden bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] border border-gray-200/40"
+          ? "rounded-2xl overflow-hidden bg-(--bg-surface) shadow-[0_1px_8px_rgba(0,0,0,0.06)] border border-(--border-default)"
           : ""
       }
     >
@@ -70,7 +70,7 @@ export default function TreeNode({
       <div
         style={{ paddingLeft: `${rowIndent + 20}px` }}
         className={`flex items-center gap-x-4 pr-6 py-4 min-w-0 overflow-hidden cursor-pointer select-none transition-colors duration-100 ${
-          isOpen ? "bg-white" : "bg-white hover:bg-gray-50/50"
+          isOpen ? "bg-(--bg-surface)" : "bg-(--bg-surface) hover:bg-(--bg-surface-2)"
         }`}
         role="button"
         tabIndex={0}
@@ -79,19 +79,19 @@ export default function TreeNode({
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onToggle(rect.id)}
       >
         {/* Chevron */}
-        <span className={children.length > 0 ? "text-gray-400" : "text-transparent"}>
+        <span className={children.length > 0 ? "text-(--text-muted)" : "text-transparent"}>
           <ChevronIcon open={isOpen} />
         </span>
 
         <TypeBadge type={rect.type} />
 
-        <span className="flex-1 min-w-0 text-[15px] font-medium text-gray-800 leading-snug">
+        <span className="flex-1 min-w-0 text-[15px] font-medium text-(--text-primary) leading-snug">
           {text
             ? <span className="truncate block">{truncate(text, 120)}</span>
-            : <span className="italic text-gray-400 text-sm">No text content</span>}
+            : <span className="italic text-(--text-muted) text-sm">No text content</span>}
         </span>
 
-        <span className="shrink-0 ml-auto pl-2 text-xs text-gray-400 tabular-nums">
+        <span className="shrink-0 ml-auto pl-2 text-xs text-(--text-muted) tabular-nums">
           p.{rect.page}
         </span>
       </div>
@@ -100,11 +100,11 @@ export default function TreeNode({
       {isOpen && (
         <div
           style={{ paddingLeft: `${contentIndent}px` }}
-          className="pr-6 pb-6 pt-4 bg-gray-50/60 border-t border-gray-100/60"
+          className="pr-6 pb-6 pt-4 bg-(--bg-page) border-t border-(--border-default)"
         >
           {/* Screenshot card */}
           <div
-            className="bg-white rounded-2xl shadow-[0_1px_8px_rgba(0,0,0,0.07)] overflow-hidden mb-5 cursor-zoom-in"
+            className="bg-(--bg-surface) rounded-2xl shadow-[0_1px_8px_rgba(0,0,0,0.07)] overflow-hidden mb-5 cursor-zoom-in"
             onClick={() => onLightbox(rect)}
             role="button"
             tabIndex={0}
@@ -112,14 +112,14 @@ export default function TreeNode({
             aria-label={`View full image — ${TYPE_LABEL[rect.type] ?? rect.type}, p.${rect.page}`}
           >
             {/* Image container */}
-            <div className="p-5 bg-gray-50/40 flex items-center justify-center">
+            <div className="p-5 bg-(--bg-page) flex items-center justify-center">
               <RectCrop docId={docId} rect={rect} thumb onClick={() => onLightbox(rect)} />
             </div>
 
             {/* Text caption */}
             {text && (
               <div
-                className="px-5 py-4 border-t border-gray-100/80 bg-white"
+                className="px-5 py-4 border-t border-(--border-default) bg-(--bg-surface)"
                 onClick={(e) => e.stopPropagation()}
               >
                 <TextPreview text={text} />
@@ -129,7 +129,7 @@ export default function TreeNode({
 
           {/* Children with left guide */}
           {children.length > 0 && (
-            <div className="border-l border-gray-200/50 pl-4 space-y-1">
+            <div className="border-l border-(--border-default) pl-4 space-y-1">
               {children.map((child) => (
                 <TreeNode
                   key={child.id}

@@ -36,14 +36,14 @@ export type TreeMap = Map<string | null, RectClient[]>;
 export const PAGE_ASPECT = 297 / 210;
 
 export const TYPE_STYLE = {
-  annexe:    { badge: "bg-slate-100 text-slate-700",   accent: "bg-slate-500",  border: "border-l-slate-400"  },
-  article:   { badge: "bg-amber-100 text-amber-800",   accent: "bg-amber-400",  border: "border-l-amber-400"  },
-  section:   { badge: "bg-violet-100 text-violet-700", accent: "bg-violet-400", border: "border-l-violet-400" },
-  paragraph: { badge: "bg-gray-100 text-gray-600",     accent: "bg-gray-300",   border: "border-l-gray-300"   },
-  phrase:    { badge: "bg-blue-100 text-blue-700",     accent: "bg-blue-400",   border: "border-l-blue-400"   },
-  figure:    { badge: "bg-pink-100 text-pink-700",     accent: "bg-pink-400",   border: "border-l-pink-400"   },
-  table:     { badge: "bg-cyan-100 text-cyan-700",     accent: "bg-cyan-400",   border: "border-l-cyan-400"   },
-  formula:   { badge: "bg-orange-100 text-orange-700", accent: "bg-orange-400", border: "border-l-orange-400" },
+  annexe:    { badge: "bg-slate-100 text-slate-700 dark:bg-slate-800/50 dark:text-slate-300",     accent: "bg-slate-500",  border: "border-l-slate-400"  },
+  article:   { badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",     accent: "bg-amber-400",  border: "border-l-amber-400"  },
+  section:   { badge: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300", accent: "bg-violet-400", border: "border-l-violet-400" },
+  paragraph: { badge: "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300",            accent: "bg-gray-300",   border: "border-l-gray-300"   },
+  phrase:    { badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",          accent: "bg-blue-400",   border: "border-l-blue-400"   },
+  figure:    { badge: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",          accent: "bg-pink-400",   border: "border-l-pink-400"   },
+  table:     { badge: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",          accent: "bg-cyan-400",   border: "border-l-cyan-400"   },
+  formula:   { badge: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",  accent: "bg-orange-400", border: "border-l-orange-400" },
 } as const;
 
 type KnownType = keyof typeof TYPE_STYLE;

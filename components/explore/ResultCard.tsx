@@ -43,7 +43,7 @@ export default function ResultCard({
   const text = getText(rect, lang);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100/60 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col pt-1">
+    <div className="bg-(--bg-surface) rounded-2xl border border-(--border-default) shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col pt-1">
       {/* Top accent line */}
       <div className={`h-1 w-full ${typeStyle(rect.type).accent}`} />
 
@@ -53,18 +53,18 @@ export default function ResultCard({
           <span key={node.id} className="flex items-center gap-1.5">
             {i > 0 && <ChevronSmall />}
             <TypeBadge type={node.type} />
-            <span className="text-xs font-medium text-gray-500 truncate max-w-24 text-balance">
+            <span className="text-xs font-medium text-(--text-secondary) truncate max-w-24 text-balance">
               {truncate(getText(node, lang), 24) || TYPE_LABEL[node.type]}
             </span>
           </span>
         ))}
-        <span className="ml-auto text-xs text-gray-400 tabular-nums shrink-0">p.{rect.page}</span>
+        <span className="ml-auto text-xs text-(--text-muted) tabular-nums shrink-0">p.{rect.page}</span>
       </div>
 
       {/* Screenshot */}
       <div className="px-5 pb-4">
         <div
-          className="rounded-xl overflow-hidden bg-gray-50 cursor-zoom-in ring-1 ring-inset ring-gray-900/5 transition-all hover:ring-gray-900/10"
+          className="rounded-xl overflow-hidden bg-(--bg-page) cursor-zoom-in ring-1 ring-inset ring-black/5 dark:ring-white/5 transition-all hover:ring-black/10 dark:hover:ring-white/10"
           onClick={() => onLightbox(rect)}
           role="button"
           tabIndex={0}
@@ -90,7 +90,7 @@ export default function ResultCard({
           {rect.labels.map((l) => (
             <span
               key={l}
-              className="text-[10px] font-medium px-2 py-1 rounded-md bg-gray-50 text-gray-600 ring-1 ring-gray-200/50"
+              className="text-[10px] font-medium px-2 py-1 rounded-md bg-(--bg-page) text-(--text-secondary) ring-1 ring-(--border-default)"
             >
               {l}
             </span>
