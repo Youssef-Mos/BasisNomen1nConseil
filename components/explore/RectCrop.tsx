@@ -94,9 +94,11 @@ export default function RectCrop({
           alt={alt}
           draggable={false}
           className={imgCls}
-          style={{ display: loaded ? "block" : "none" }}
+          style={{ display: loaded ? "block" : "none", pointerEvents: "none", userSelect: "none" }}
           onLoad={() => setLoaded(true)}
           onError={() => { setCropFailed(true); setLoaded(false); }}
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
         />
       </div>
     );
@@ -127,7 +129,10 @@ export default function RectCrop({
         draggable={false}
         onLoad={() => setLoaded(true)}
         onError={() => { setLoaded(true); setPageFailed(true); }}
+        onContextMenu={(e) => e.preventDefault()}
+        onDragStart={(e) => e.preventDefault()}
         style={{
+          userSelect: "none",
           position: "absolute",
           width: `${(100 / w) * 100}%`,
           height: "auto",

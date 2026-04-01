@@ -98,8 +98,8 @@ export function buildPath(rect: RectClient, rectById: Map<string, RectClient>): 
   return chain;
 }
 
-export function cropImageUrl(docId: string, rectId: string): string {
-  return `/pdf-pages/${docId}/crops/${rectId}.png`;
+export function cropImageUrl(_docId: string, rectId: string): string {
+  return `/api/crop/${rectId}`;
 }
 
 export function pageImageUrl(docId: string, page: number): string {
