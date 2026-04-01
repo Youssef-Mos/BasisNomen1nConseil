@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { cropImageUrl, pageImageUrl, PAGE_ASPECT, TYPE_LABEL } from "./shared";
-import type { RectClient } from "./shared";
+import type { RectClient, Lang } from "./shared";
 
 // ─── RectCrop ─────────────────────────────────────────────────────────────────
 //
@@ -18,16 +18,21 @@ import type { RectClient } from "./shared";
 //   img width               = (100/w) × 100%
 //   img left                = -(x/w)  × 100%
 //   img top                 = -(y/h)  × 100%
+//
+// Text overlay: transparent <div> at opacity:0 covers the image so the user
+// can select and copy the underlying text without any visual change.
 
 export default function RectCrop({
   docId,
   rect,
   thumb = true,
+  lang = "fr",
   onClick,
 }: {
   docId: string;
   rect: RectClient;
   thumb?: boolean;
+  lang?: Lang;
   onClick?: () => void;
 }) {
   const [cropFailed, setCropFailed] = useState(false);
@@ -51,6 +56,33 @@ export default function RectCrop({
         onKeyDown: (e: React.KeyboardEvent) => e.key === "Enter" && onClick(),
       }
     : {};
+
+  // Text overlay content — fallback chain per language, null if nothing in DB
+  const textContent: string | null =
+    lang === "en" ? (rect.textEn ?? rect.textFr ?? null)
+    : lang === "nl" ? (rect.textNl ?? rect.textFr ?? null)
+    : (rect.textFr ?? null);
+
+  // Transparent overlay that lets users select/copy text like in a native PDF
+  const textOverlay = textContent ? (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        inset: 0,
+        opacity: 0,
+        userSelect: "text",
+        cursor: "text",
+        pointerEvents: "auto",
+        fontSize: "1px",
+        lineHeight: 1,
+        overflow: "hidden",
+        color: "transparent",
+      }}
+    >
+      {textContent}
+    </div>
+  ) : null;
 
   const wrapCls = `bg-(--bg-page) flex items-center justify-center overflow-hidden ${onClick ? "cursor-zoom-in" : ""}`;
 
@@ -86,7 +118,7 @@ export default function RectCrop({
       : "w-full h-auto block";
 
     return (
-      <div className={wrapCls} {...clickProps}>
+      <div className={wrapCls} style={{ position: "relative" }} {...clickProps}>
         {!loaded && spinner}
         <img
           key={rect.id + docId}
@@ -100,6 +132,7 @@ export default function RectCrop({
           onContextMenu={(e) => e.preventDefault()}
           onDragStart={(e) => e.preventDefault()}
         />
+        {loaded && textOverlay}
       </div>
     );
   }
@@ -143,6 +176,7 @@ export default function RectCrop({
           maxWidth: "none",
         }}
       />
+      {loaded && textOverlay}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import type { RectClient } from "./shared";
+import type { RectClient, Lang } from "./shared";
 import TypeBadge from "./ui/TypeBadge";
 import RectCrop from "./RectCrop";
 
@@ -25,10 +25,12 @@ function CloseIcon() {
 export default function Lightbox({
   docId,
   rect,
+  lang = "fr",
   onClose,
 }: {
   docId: string;
   rect: RectClient;
+  lang?: Lang;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -61,7 +63,7 @@ export default function Lightbox({
         </div>
         <div className="p-8 overflow-auto bg-(--bg-page) flex items-center justify-center">
           <div className="bg-(--bg-surface) p-4 rounded-xl shadow-sm border border-(--border-default) max-w-full">
-            <RectCrop docId={docId} rect={rect} thumb={false} />
+            <RectCrop docId={docId} rect={rect} thumb={false} lang={lang} />
           </div>
         </div>
       </div>
