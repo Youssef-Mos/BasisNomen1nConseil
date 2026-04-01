@@ -1,104 +1,109 @@
 /**
- * lib/types.ts — Shapes des réponses API.
+ * lib/types.ts — Shared types for the Rectangle-centric architecture.
  *
- * Ces types sont partagés entre les route handlers (côté serveur)
- * et les pages/composants Next.js (côté client via fetch).
+ * Used by API routes (server) and components (client).
  */
+
+// ---------------------------------------------------------------------------
+// Rectangle type enum (mirrors Prisma RectangleType)
+// ---------------------------------------------------------------------------
+
+export const RECTANGLE_TYPES = [
+  "phrase",
+  "paragraph",
+  "article",
+  "section",
+  "figure",
+  "table",
+  "formula",
+  "annexe",
+] as const;
+
+export type RectangleType = (typeof RECTANGLE_TYPES)[number];
 
 // ---------------------------------------------------------------------------
 // Documents
 // ---------------------------------------------------------------------------
 
 export type DocumentListItem = {
-  id: string
-  title: string
-  language: string
-  version: string | null
-  articleCount: number
-  /** Numéro de la dernière page détectée dans les articles du document. */
-  pageCount: number
-  createdAt: string
-}
+  id: string;
+  title: string;
+  pageCount: number;
+  rectangleCount: number;
+  createdAt: string;
+};
 
 export type DocumentDetail = DocumentListItem & {
-  pdfPath: string
-  updatedAt: string
-}
+  pdfPath: string;
+  updatedAt: string;
+};
 
 // ---------------------------------------------------------------------------
-// Tree (hiérarchie d'articles)
+// Rectangles
 // ---------------------------------------------------------------------------
 
-export type ArticleTreeNode = {
-  id: string
-  title: string | null
-  slug: string
-  level: number
-  orderIndex: number
-  pageStart: number
-  pageEnd: number | null
-  /** True si cet article a au moins une PdfZone associée. */
-  hasZones: boolean
-  children: ArticleTreeNode[]
-}
+export type RectangleData = {
+  id: string;
+  documentId: string;
+  fatherId: string | null;
+  type: RectangleType;
+  labels: string[];
+  textFr: string | null;
+  textEn: string | null;
+  textNl: string | null;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RectangleWithChildren = RectangleData & {
+  children: RectangleData[];
+  father: { id: string; type: RectangleType; labels: string[] } | null;
+};
+
+export type RectangleCreateInput = {
+  documentId: string;
+  fatherId?: string | null;
+  type?: RectangleType;
+  labels?: string[];
+  textFr?: string | null;
+  textEn?: string | null;
+  textNl?: string | null;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export type RectangleUpdateInput = {
+  fatherId?: string | null;
+  type?: RectangleType;
+  labels?: string[];
+  textFr?: string | null;
+  textEn?: string | null;
+  textNl?: string | null;
+  page?: number;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+};
 
 // ---------------------------------------------------------------------------
-// Article
+// Drawing modes for the admin interface
 // ---------------------------------------------------------------------------
 
-export type ArticleDetail = {
-  id: string
-  documentId: string
-  parentId: string | null
-  title: string | null
-  slug: string
-  level: number
-  orderIndex: number
-  pageStart: number
-  pageEnd: number | null
-  parent: { id: string; title: string | null; slug: string; level: number } | null
-  children: { id: string; title: string | null; slug: string; orderIndex: number }[]
-  zones: ZoneWithOcr[]
-}
-
-export type ZoneWithOcr = {
-  id: string
-  page: number
-  x: number
-  y: number
-  width: number
-  height: number
-  imagePath: string
-  /** Texte OCR — pour recherche / surlignage uniquement, jamais affiché comme contenu. */
-  ocrText: { id: string; text: string } | null
-}
+export type DrawingMode = "select" | "fullWidth" | "freeRect";
 
 // ---------------------------------------------------------------------------
-// Recherche
-// ---------------------------------------------------------------------------
-
-export type SearchResultItem = {
-  articleId: string
-  articleTitle: string | null
-  articleSlug: string
-  articlePage: number
-  zoneId: string
-  zonePage: number
-  imagePath: string
-  /** Fragment du texte OCR autour de la correspondance. */
-  excerpt: string
-}
-
-export type SearchResponse = {
-  query: string
-  total: number
-  results: SearchResultItem[]
-}
-
-// ---------------------------------------------------------------------------
-// Erreurs
+// API Errors
 // ---------------------------------------------------------------------------
 
 export type ApiError = {
-  error: string
-}
+  error: string;
+};

@@ -1,17 +1,29 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f6f7f9;
-  --foreground: #0f172a;
+  --bg-page:        #f8f8f7;
+  --bg-surface:     #ffffff;
+  --bg-surface-2:   #f1f0ed;
+  --border-default: rgba(0,0,0,0.08);
+  --border-strong:  rgba(0,0,0,0.15);
+  --text-primary:   #0f0f0e;
+  --text-secondary: #6b7280;
+  --text-muted:     #9ca3af;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+.dark {
+  --bg-page:        #0f0f0e;
+  --bg-surface:     #1a1a18;
+  --bg-surface-2:   #242422;
+  --border-default: rgba(255,255,255,0.08);
+  --border-strong:  rgba(255,255,255,0.15);
+  --text-primary:   #f5f4f0;
+  --text-secondary: #9ca3af;
+  --text-muted:     #6b7280;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
 }

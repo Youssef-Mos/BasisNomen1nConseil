@@ -1,12 +1,12 @@
 // =============================================================================
-// Basis Norm Explorer — Database Schema
+// Basis Norm Explorer — Database Schema (Jalon 1 Refactor)
 // PostgreSQL + Prisma
 //
 // Architecture:
-//   Document → Article (self-referencing tree) → PdfZone → OcrText
+//   Document → Rectangle (self-referencing tree via fatherId)
 //
-// Source of truth for the Next.js frontend.
-// Populated by an external Python pipeline via direct PostgreSQL inserts.
+// ALL structure is created manually by Admin.
+// No automatic detection. Rectangle is the CORE entity.
 // =============================================================================
 
 generator client {
@@ -19,118 +19,81 @@ datasource db {
 }
 
 // -----------------------------------------------------------------------------
+// RectangleType
+//
+// Enum for the type of content a rectangle represents.
+// -----------------------------------------------------------------------------
+enum RectangleType {
+  phrase
+  paragraph
+  article
+  section
+  figure
+  table
+  formula
+  annexe
+}
+
+// -----------------------------------------------------------------------------
 // Document
 //
-// One row = one imported PDF.
-// fileHash (SHA-256) prevents duplicate ingestion.
-// pdfPath is the storage path used to serve the original PDF.
+// One row = one uploaded PDF.
+// fileHash (SHA-256) prevents duplicate uploads.
+// pdfPath is the storage path to the original PDF file.
+// pageCount is extracted on upload.
 // -----------------------------------------------------------------------------
 model Document {
   id        String   @id @default(cuid())
   title     String
   pdfPath   String
-  fileHash  String   @unique                 // SHA-256, guards against re-ingestion
-  language  String   @default("fr")
-  version   String?
+  fileHash  String   @unique
+  pageCount Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  articles  Article[]
+  rectangles Rectangle[]
 
-  @@index([language])
   @@index([createdAt])
   @@map("documents")
 }
 
 // -----------------------------------------------------------------------------
-// Article
+// Rectangle
 //
-// One row = one section / article / sub-article inside a document.
-// Self-referencing tree via parentId.
+// CORE ENTITY of the system.
+// One row = one manually-drawn rectangle on a PDF page.
 //
-// level:      1 = top-level chapter, 2 = section, 3 = sub-section, …
-// orderIndex: position among siblings (for ordered display)
-// slug:       URL-safe identifier, unique within a document
-// pageStart / pageEnd: page range in the original PDF
+// Hierarchy: self-referencing tree via fatherId.
+// Labels: string array, inherited recursively from parent.
+// Text: multi-language (EN / FR / NL).
+// Coordinates: percentages (0–100) relative to page dimensions.
+//   x=0 left edge, x=100 right edge, y=0 top, y=100 bottom.
+//
+// Rectangles MUST NOT overlap on the same page.
 // -----------------------------------------------------------------------------
-model Article {
-  id         String   @id @default(cuid())
+model Rectangle {
+  id         String        @id @default(cuid())
   documentId String
-  parentId   String?                         // null = root node
-  title      String?
-  slug       String                          // e.g. "1-2-3" or "art-42"
-  level      Int                             // hierarchy depth
-  orderIndex Int
-  pageStart  Int
-  pageEnd    Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  fatherId   String?
+  type       RectangleType @default(paragraph)
+  labels     String[]
+  textFr     String?
+  textEn     String?
+  textNl     String?
+  page       Int
+  x          Float
+  y          Float
+  width      Float
+  height     Float
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
-  // Relations
-  document Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  parent   Article?  @relation("ArticleTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children Article[] @relation("ArticleTree")
-  zones    PdfZone[]
+  document Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  father   Rectangle?  @relation("RectangleTree", fields: [fatherId], references: [id], onDelete: SetNull)
+  children Rectangle[] @relation("RectangleTree")
 
-  @@unique([documentId, slug])              // slug unique within a document
-  @@index([documentId, orderIndex])        // ordered listing per document
-  @@index([documentId, level])             // level-based navigation
-  @@index([parentId])                      // children lookup
-  @@map("articles")
-}
-
-// -----------------------------------------------------------------------------
-// PdfZone
-//
-// One row = one visual bounding box inside the PDF for a given article.
-// An article can have several zones (multi-page or multi-block articles).
-//
-// Coordinates (x, y, width, height) are in PDF points or pixels —
-// the Python pipeline decides the unit; the frontend reads it as-is.
-//
-// imagePath: pre-rendered cropped image served to the UI.
-// The original PDF is never replaced — imagePath is a visual snapshot only.
-// -----------------------------------------------------------------------------
-model PdfZone {
-  id        String   @id @default(cuid())
-  articleId String
-  page      Int                             // 1-based page number
-  x         Float
-  y         Float
-  width     Float
-  height    Float
-  imagePath String                          // path to the pre-rendered crop
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  article Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  ocrText OcrText?                          // one zone may have one OCR block
-
-  @@index([articleId])
-  @@index([articleId, page])
-  @@map("pdf_zones")
-}
-
-// -----------------------------------------------------------------------------
-// OcrText
-//
-// One row = OCR transcription of one PdfZone.
-// PURPOSE: search, filtering, highlighting only.
-// The text here is NOT displayed as content — the UI always renders imagePath.
-//
-// For full-text search, add a GIN index on text via a raw SQL migration:
-//   CREATE INDEX ocr_texts_text_gin ON ocr_texts USING gin(to_tsvector('french', text));
-// -----------------------------------------------------------------------------
-model OcrText {
-  id        String   @id @default(cuid())
-  zoneId    String   @unique                // 1:1 with PdfZone
-  text      String                          // raw OCR output
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  zone PdfZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
-
-  @@map("ocr_texts")
+  @@index([documentId])
+  @@index([documentId, page])
+  @@index([fatherId])
+  @@map("rectangles")
 }

@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Basis Norm Explorer",
-  description: "Base technique Next.js pour explorer des normes PDF structurees.",
+  description: "SaaS document exploration platform — Admin & User interfaces",
 };
 
 export default function RootLayout({
@@ -12,7 +12,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Anti-flash: apply dark class before first paint */}
+        <script dangerouslySetInnerHTML={{ __html: `try{const t=localStorage.getItem('theme');const sys=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&sys))document.documentElement.classList.add('dark')}catch(e){}` }} />
+      </head>
       <body className="antialiased">{children}</body>
     </html>
   );

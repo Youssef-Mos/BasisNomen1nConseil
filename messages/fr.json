@@ -1,7 +1,0 @@
-{
-  "home": {
-    "title": "Basis Norm Explorer",
-    "subtitle": "Base technique initialisee: Next.js, Prisma et architecture multi-documents.",
-    "status": "Pret pour consommer des donnees structurees en base PostgreSQL."
-  }
-}
