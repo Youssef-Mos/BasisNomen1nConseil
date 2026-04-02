@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { DrawingMode } from "@/lib/types";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 
@@ -32,6 +33,13 @@ export default function ToolBar({
   onAnalyze,
   onDelete,
 }: Props) {
+  const router = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.push("/admin/login");
+  }
+
   return (
     <div className="h-11 border-b border-(--border-default) bg-(--bg-surface) flex items-center px-4 gap-4 shrink-0">
       {/* Document title */}
@@ -109,6 +117,22 @@ export default function ToolBar({
       <div className="ml-auto text-[10px] text-(--text-muted) hidden lg:block">
         V=Select &middot; F=Full Width &middot; R=Free Rect &middot; Esc=Cancel
       </div>
+
+      <div className="w-px h-6 bg-(--border-default)" />
+
+      {/* Logout */}
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-1.5 px-2 py-1 text-xs text-(--text-muted) hover:text-(--text-secondary) hover:bg-(--bg-surface-2) rounded transition-colors"
+        title="Déconnexion"
+      >
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        Déconnexion
+      </button>
     </div>
   );
 }

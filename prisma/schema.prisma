@@ -97,3 +97,19 @@ model Rectangle {
   @@index([fatherId])
   @@map("rectangles")
 }
+
+// -----------------------------------------------------------------------------
+// AdminOtp
+//
+// One-time password for admin login. One active record at a time.
+// Older records are marked used=true before creating a new one.
+// -----------------------------------------------------------------------------
+model AdminOtp {
+  id        String   @id @default(cuid())
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("admin_otps")
+}
