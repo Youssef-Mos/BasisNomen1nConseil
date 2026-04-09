@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { DocumentListItem } from "@/lib/types";
+import type { DocumentListItem, NormData } from "@/lib/types";
 
 export default function DocumentList() {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
@@ -14,6 +14,12 @@ export default function DocumentList() {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Norm + version state
+  const [norms, setNorms] = useState<NormData[]>([]);
+  const [normSelection, setNormSelection] = useState<string>("");
+  const [newNormName, setNewNormName] = useState("");
+  const [docVersion, setDocVersion] = useState("");
+
   async function fetchDocuments() {
     setLoading(true);
     try {
@@ -25,8 +31,17 @@ export default function DocumentList() {
     }
   }
 
+  async function fetchNorms() {
+    const res = await fetch("/api/norms");
+    if (res.ok) {
+      const data = await res.json();
+      setNorms(data);
+    }
+  }
+
   useEffect(() => {
     fetchDocuments();
+    fetchNorms();
   }, []);
 
   async function handleUpload(e: React.FormEvent) {
@@ -36,9 +51,36 @@ export default function DocumentList() {
     setUploading(true);
     setError(null);
 
+    // If user chose "+ Create new norm", create it first
+    let resolvedNormId: string | null = null;
+    if (normSelection === "__new__") {
+      if (!newNormName.trim()) {
+        setError("Please enter a name for the new norm.");
+        setUploading(false);
+        return;
+      }
+      const normRes = await fetch("/api/norms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newNormName.trim() }),
+      });
+      if (!normRes.ok) {
+        setError("Failed to create norm.");
+        setUploading(false);
+        return;
+      }
+      const newNorm = await normRes.json() as NormData;
+      setNorms((prev) => [...prev, newNorm].sort((a, b) => a.name.localeCompare(b.name)));
+      resolvedNormId = newNorm.id;
+    } else if (normSelection) {
+      resolvedNormId = normSelection;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("title", title.trim());
+    if (resolvedNormId) formData.append("normId", resolvedNormId);
+    if (docVersion.trim()) formData.append("version", docVersion.trim());
 
     try {
       const res = await fetch("/api/documents", {
@@ -54,6 +96,9 @@ export default function DocumentList() {
 
       setTitle("");
       setFile(null);
+      setNormSelection("");
+      setNewNormName("");
+      setDocVersion("");
       setShowUpload(false);
       fetchDocuments();
     } catch {
@@ -64,7 +109,7 @@ export default function DocumentList() {
   }
 
   async function handleDelete(e: React.MouseEvent, docId: string, docTitle: string) {
-    e.preventDefault(); // Don't navigate to the document
+    e.preventDefault();
     e.stopPropagation();
 
     if (!confirm(`Delete "${docTitle}" and all its rectangles?\n\nThis cannot be undone.`)) return;
@@ -108,6 +153,7 @@ export default function DocumentList() {
               required
             />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-(--text-primary) mb-1">
               PDF File
@@ -120,6 +166,54 @@ export default function DocumentList() {
               required
             />
           </div>
+
+          {/* Norm */}
+          <div>
+            <label className="block text-sm font-medium text-(--text-primary) mb-1">
+              Norm <span className="font-normal text-(--text-muted)">(optional)</span>
+            </label>
+            <select
+              value={normSelection}
+              onChange={(e) => setNormSelection(e.target.value)}
+              className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">— No norm —</option>
+              {norms.map((n) => (
+                <option key={n.id} value={n.id}>{n.name}</option>
+              ))}
+              <option value="__new__">+ Create new norm</option>
+            </select>
+          </div>
+
+          {normSelection === "__new__" && (
+            <div>
+              <label className="block text-sm font-medium text-(--text-primary) mb-1">
+                New norm name
+              </label>
+              <input
+                type="text"
+                value={newNormName}
+                onChange={(e) => setNewNormName(e.target.value)}
+                placeholder="e.g. NBN S21-201"
+                className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          )}
+
+          {/* Version */}
+          <div>
+            <label className="block text-sm font-medium text-(--text-primary) mb-1">
+              Version <span className="font-normal text-(--text-muted)">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={docVersion}
+              onChange={(e) => setDocVersion(e.target.value)}
+              placeholder="e.g. 2013, 2022-03"
+              className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
@@ -148,9 +242,16 @@ export default function DocumentList() {
               className="flex items-center justify-between p-4 bg-(--bg-surface) border border-(--border-default) rounded-lg hover:border-blue-300 hover:shadow-sm transition-all group"
             >
               <div>
-                <h2 className="font-medium text-(--text-primary) group-hover:text-blue-600">
-                  {doc.title}
-                </h2>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-medium text-(--text-primary) group-hover:text-blue-600">
+                    {doc.title}
+                  </h2>
+                  {doc.normName && (
+                    <span className="bg-(--bg-surface-2) text-(--text-secondary) text-xs px-2 py-0.5 rounded-md">
+                      {doc.normName}{doc.version && ` · ${doc.version}`}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-(--text-muted) mt-1">
                   {doc.pageCount} pages &middot; {doc.rectangleCount} rectangles &middot;{" "}
                   {new Date(doc.createdAt).toLocaleDateString("en-US")}

@@ -13,6 +13,12 @@ export const RECTANGLE_TYPES = [
   "paragraph",
   "article",
   "section",
+  "subsection",
+  "subSubsection",
+  "subSubSubsection",
+  "subSubSubSubsection",
+  "subSubSubSubSubsection",
+  "subSubSubSubSubSubsection",
   "figure",
   "table",
   "formula",
@@ -25,12 +31,22 @@ export type RectangleType = (typeof RECTANGLE_TYPES)[number];
 // Documents
 // ---------------------------------------------------------------------------
 
+export type NormData = {
+  id: string;
+  name: string;
+  description: string | null;
+  country: string;
+};
+
 export type DocumentListItem = {
   id: string;
   title: string;
   pageCount: number;
   rectangleCount: number;
   createdAt: string;
+  normId: string | null;
+  normName: string | null;
+  version: string | null;
 };
 
 export type DocumentDetail = DocumentListItem & {

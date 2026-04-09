@@ -24,10 +24,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protected paths — require valid session
-  const protectedPaths = ["/admin", "/api/rectangles", "/api/documents", "/api/analyze"];
+  const protectedPaths = ["/admin", "/api/rectangles", "/api/documents", "/api/analyze", "/api/norms"];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
   if (!isProtected) return NextResponse.next();
+
+  // DEV BYPASS — remove before production
+  if (process.env.NODE_ENV === "development") return NextResponse.next();
 
   const token = request.cookies.get("admin_session")?.value;
   if (!token) {

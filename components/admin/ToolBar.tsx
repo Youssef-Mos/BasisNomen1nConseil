@@ -10,6 +10,7 @@ type Props = {
   pageCount: number;
   drawingMode: DrawingMode;
   analyzing: boolean;
+  sessionCount: number;
   onPageChange: (page: number) => void;
   onModeChange: (mode: DrawingMode) => void;
   onAnalyze: () => void;
@@ -28,6 +29,7 @@ export default function ToolBar({
   pageCount,
   drawingMode,
   analyzing,
+  sessionCount,
   onPageChange,
   onModeChange,
   onAnalyze,
@@ -113,9 +115,16 @@ export default function ToolBar({
         Delete Doc
       </button>
 
-      {/* Keyboard shortcut hint */}
-      <div className="ml-auto text-[10px] text-(--text-muted) hidden lg:block">
-        V=Select &middot; F=Full Width &middot; R=Free Rect &middot; Esc=Cancel
+      {/* Session counter */}
+      <div className="ml-auto flex items-center gap-3">
+        {sessionCount > 0 && (
+          <span className="text-[10px] text-(--text-muted) tabular-nums">
+            {sessionCount} rect{sessionCount > 1 ? "s" : ""} created
+          </span>
+        )}
+        <span className="text-[10px] text-(--text-muted) hidden lg:block">
+          V=Select &middot; F=Full Width &middot; R=Free Rect &middot; Esc=Cancel
+        </span>
       </div>
 
       <div className="w-px h-6 bg-(--border-default)" />
@@ -124,14 +133,14 @@ export default function ToolBar({
       <button
         onClick={handleLogout}
         className="flex items-center gap-1.5 px-2 py-1 text-xs text-(--text-muted) hover:text-(--text-secondary) hover:bg-(--bg-surface-2) rounded transition-colors"
-        title="Déconnexion"
+        title="Logout"
       >
         <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
           <polyline points="16 17 21 12 16 7" />
           <line x1="21" y1="12" x2="9" y2="12" />
         </svg>
-        Déconnexion
+        Logout
       </button>
     </div>
   );

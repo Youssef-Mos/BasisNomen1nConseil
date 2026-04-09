@@ -1,28 +1,70 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { RECTANGLE_TYPES } from "@/lib/types";
 import type { RectangleData, RectangleType } from "@/lib/types";
 import ParentSelector from "./ParentSelector";
+
+const TYPE_HIERARCHY: Record<string, string> = {
+  annexe:                   "section",
+  section:                  "subsection",
+  subsection:               "subSubsection",
+  subSubsection:            "subSubSubsection",
+  subSubSubsection:         "subSubSubSubsection",
+  subSubSubSubsection:      "subSubSubSubSubsection",
+  subSubSubSubSubsection:   "subSubSubSubSubSubsection",
+  article:                  "paragraph",
+  paragraph:                "phrase",
+};
+
+function suggestType(parentType: string | null): RectangleType | null {
+  if (!parentType) return null;
+  return (TYPE_HIERARCHY[parentType] as RectangleType) ?? null;
+}
+
+const TYPE_DISPLAY_LABELS: Record<string, string> = {
+  phrase:                     "Phrase",
+  paragraph:                  "Paragraph",
+  article:                    "Article",
+  section:                    "Section (level 1)",
+  subsection:                 "Subsection (level 2)",
+  subSubsection:              "Sub-subsection (level 3)",
+  subSubSubsection:           "Sub-subsection (level 4)",
+  subSubSubSubsection:        "Sub-subsection (level 5)",
+  subSubSubSubSubsection:     "Sub-subsection (level 6)",
+  subSubSubSubSubSubsection:  "Sub-subsection (level 7)",
+  figure:                     "Figure",
+  table:                      "Table",
+  formula:                    "Formula",
+  annexe:                     "Annexe",
+};
 
 type Props = {
   rectangle: RectangleData | null;
   allRectangles: RectangleData[];
   documentId: string;
+  justCreated?: boolean;
   onUpdate: (id: string, data: Record<string, unknown>) => Promise<unknown>;
   onDelete: (id: string) => void;
   onDeselect: () => void;
+  onAcknowledge?: () => void;
+  onSaveSuccess?: () => void;
 };
 
 export default function PropertiesPanel({
   rectangle,
   allRectangles,
   documentId: _documentId,
+  justCreated,
   onUpdate,
   onDelete,
   onDeselect,
+  onAcknowledge,
+  onSaveSuccess,
 }: Props) {
+  const panelRef = useRef<HTMLDivElement>(null);
   const [type, setType] = useState<RectangleType>("paragraph");
+  const [typeManuallySet, setTypeManuallySet] = useState(false);
   const [fatherId, setFatherId] = useState<string>("");
   const [labelsStr, setLabelsStr] = useState("");
   const [textFr, setTextFr] = useState("");
@@ -44,8 +86,24 @@ export default function PropertiesPanel({
       setTextNl(rectangle.textNl || "");
       setExtractError(null);
       setSaveSuccess(false);
+      setTypeManuallySet(false);
     }
   }, [rectangle]);
+
+  // Suggest type based on parent selection (only when admin hasn't chosen manually)
+  useEffect(() => {
+    if (typeManuallySet) return;
+    const parent = allRectangles.find((r) => r.id === fatherId);
+    const suggested = suggestType(parent?.type ?? null);
+    if (suggested) setType(suggested);
+  }, [fatherId, allRectangles, typeManuallySet]);
+
+  // Scroll to top when a new rectangle was just created
+  useEffect(() => {
+    if (justCreated && panelRef.current) {
+      panelRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [justCreated]);
 
   if (!rectangle) {
     return (
@@ -132,6 +190,8 @@ export default function PropertiesPanel({
       if (updated.textNl !== undefined) setTextNl(updated.textNl || "");
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
+      onAcknowledge?.();
+      onSaveSuccess?.();
     }
 
     setSaving(false);
@@ -186,8 +246,22 @@ export default function PropertiesPanel({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={panelRef} className="flex-1 overflow-y-auto">
         <div className="px-4 py-4 space-y-5">
+
+          {/* — "Just created" banner — */}
+          {justCreated && (
+            <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800/50 text-green-800 dark:text-green-300">
+              <span className="text-xs font-medium">Rectangle created — fill in the properties below</span>
+              <button
+                onClick={onAcknowledge}
+                className="shrink-0 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 text-sm leading-none"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
           {/* — Read-only metadata — */}
           <div className="space-y-3 pb-4 border-b border-(--border-default)">
@@ -219,15 +293,21 @@ export default function PropertiesPanel({
               </label>
               <select
                 value={type}
-                onChange={(e) => setType(e.target.value as RectangleType)}
+                onChange={(e) => {
+                  setType(e.target.value as RectangleType);
+                  setTypeManuallySet(true);
+                }}
                 className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
               >
                 {RECTANGLE_TYPES.map((t) => (
                   <option key={t} value={t}>
-                    {t}
+                    {TYPE_DISPLAY_LABELS[t] ?? t}
                   </option>
                 ))}
               </select>
+              {!typeManuallySet && fatherId && suggestType(allRectangles.find((r) => r.id === fatherId)?.type ?? null) && (
+                <p className="text-xs text-(--text-muted) mt-1">Suggested from parent</p>
+              )}
             </div>
 
             <div>

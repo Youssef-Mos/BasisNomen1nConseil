@@ -34,7 +34,10 @@ async function renderPagesForDocument(
 export async function GET() {
   const documents = await prisma.document.findMany({
     orderBy: { createdAt: "desc" },
-    include: { _count: { select: { rectangles: true } } },
+    include: {
+      _count: { select: { rectangles: true } },
+      norm: { select: { name: true } },
+    },
   });
 
   const items = documents.map((doc) => ({
@@ -43,6 +46,9 @@ export async function GET() {
     pageCount: doc.pageCount,
     rectangleCount: doc._count.rectangles,
     createdAt: doc.createdAt.toISOString(),
+    normId: doc.normId,
+    normName: doc.norm?.name ?? null,
+    version: doc.version,
   }));
 
   return NextResponse.json(items);
@@ -53,6 +59,8 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
   const title = formData.get("title") as string | null;
+  const normId = (formData.get("normId") as string | null) || null;
+  const version = (formData.get("version") as string | null) || null;
 
   if (!file || !title) {
     return NextResponse.json(
@@ -110,6 +118,8 @@ export async function POST(request: NextRequest) {
       pdfPath: `uploads/pdfs/${fileName}`,
       fileHash,
       pageCount,
+      normId: normId || null,
+      version: version || null,
     },
   });
 
@@ -123,6 +133,9 @@ export async function POST(request: NextRequest) {
       pageCount: document.pageCount,
       rectangleCount: 0,
       createdAt: document.createdAt.toISOString(),
+      normId: document.normId,
+      normName: null,
+      version: document.version,
     },
     { status: 201 }
   );

@@ -1,9 +1,9 @@
 // =============================================================================
-// Basis Norm Explorer — Database Schema (Jalon 1 Refactor)
+// Basis Norm Explorer — Database Schema (Jalon 2 Refactor)
 // PostgreSQL + Prisma
 //
 // Architecture:
-//   Document → Rectangle (self-referencing tree via fatherId)
+//   Norm → Document → Rectangle (self-referencing tree via fatherId)
 //
 // ALL structure is created manually by Admin.
 // No automatic detection. Rectangle is the CORE entity.
@@ -22,16 +22,42 @@ datasource db {
 // RectangleType
 //
 // Enum for the type of content a rectangle represents.
+// Jalon 2: added hierarchical subsection levels and orderOnPage on Rectangle.
+// NEVER remove or rename existing values — PostgreSQL rejects migrations that
+// drop enum values used by existing rows.
 // -----------------------------------------------------------------------------
 enum RectangleType {
   phrase
   paragraph
   article
   section
+  subsection
+  subSubsection
+  subSubSubsection
+  subSubSubSubsection
+  subSubSubSubSubsection
+  subSubSubSubSubSubsection
   figure
   table
   formula
   annexe
+}
+
+// -----------------------------------------------------------------------------
+// Norm
+//
+// A normative reference (e.g. "NBN S21-201").
+// Multiple Document versions can belong to the same Norm.
+// -----------------------------------------------------------------------------
+model Norm {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  country     String     @default("BE")
+  createdAt   DateTime   @default(now())
+  documents   Document[]
+
+  @@map("norms")
 }
 
 // -----------------------------------------------------------------------------
@@ -41,6 +67,7 @@ enum RectangleType {
 // fileHash (SHA-256) prevents duplicate uploads.
 // pdfPath is the storage path to the original PDF file.
 // pageCount is extracted on upload.
+// normId is nullable: a PDF can exist without an assigned norm.
 // -----------------------------------------------------------------------------
 model Document {
   id        String   @id @default(cuid())
@@ -48,12 +75,16 @@ model Document {
   pdfPath   String
   fileHash  String   @unique
   pageCount Int      @default(0)
+  normId    String?
+  version   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  norm       Norm?       @relation(fields: [normId], references: [id])
   rectangles Rectangle[]
 
   @@index([createdAt])
+  @@index([normId])
   @@map("documents")
 }
 
@@ -68,25 +99,27 @@ model Document {
 // Text: multi-language (EN / FR / NL).
 // Coordinates: percentages (0–100) relative to page dimensions.
 //   x=0 left edge, x=100 right edge, y=0 top, y=100 bottom.
+// orderOnPage: reading order on the page (nullable, calculated externally).
 //
 // Rectangles MUST NOT overlap on the same page.
 // -----------------------------------------------------------------------------
 model Rectangle {
-  id         String        @id @default(cuid())
-  documentId String
-  fatherId   String?
-  type       RectangleType @default(paragraph)
-  labels     String[]
-  textFr     String?
-  textEn     String?
-  textNl     String?
-  page       Int
-  x          Float
-  y          Float
-  width      Float
-  height     Float
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  id          String        @id @default(cuid())
+  documentId  String
+  fatherId    String?
+  type        RectangleType @default(paragraph)
+  labels      String[]
+  textFr      String?
+  textEn      String?
+  textNl      String?
+  page        Int
+  x           Float
+  y           Float
+  width       Float
+  height      Float
+  orderOnPage Int?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   document Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
   father   Rectangle?  @relation("RectangleTree", fields: [fatherId], references: [id], onDelete: SetNull)

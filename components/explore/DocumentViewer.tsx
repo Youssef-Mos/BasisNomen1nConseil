@@ -63,6 +63,7 @@ export default function DocumentViewer({
   rectangles: RectClient[];
 }) {
   const [lang, setLang] = useState<Lang>("fr");
+  const [popupBlocked, setPopupBlocked] = useState(false);
   const [pendingFilters, setPendingFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [resultPage, setResultPage] = useState(1);
@@ -106,6 +107,12 @@ export default function DocumentViewer({
     setTotalResults(0);
     setHasMore(false);
     setError(null);
+  }
+
+  function handleOpenPdf() {
+    setPopupBlocked(false);
+    const w = window.open(`/api/documents/${doc.id}/pdf`, "_blank", "noopener,noreferrer");
+    if (w === null) setPopupBlocked(true);
   }
 
   function handleClear() {
@@ -178,6 +185,28 @@ export default function DocumentViewer({
             </a>
 
             <div className="flex items-center gap-3">
+              {/* Open PDF button */}
+              <div className="relative">
+                <button
+                  onClick={handleOpenPdf}
+                  className="bg-(--bg-surface) border border-(--border-default) text-(--text-secondary) hover:text-(--text-primary) hover:bg-(--bg-surface-2) transition-colors duration-150 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5"
+                  title="Open raw PDF in a new tab"
+                >
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="9" y1="13" x2="15" y2="13" />
+                    <line x1="9" y1="17" x2="13" y2="17" />
+                  </svg>
+                  Open PDF
+                </button>
+                {popupBlocked && (
+                  <p className="absolute right-0 top-full mt-1 whitespace-nowrap text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-lg px-2.5 py-1 z-20">
+                    Popup blocked — allow popups for this site.
+                  </p>
+                )}
+              </div>
+
               {/* Language selector */}
               <div className="flex items-center gap-1 bg-[var(--bg-page)] p-1 rounded-full border border-[var(--border-default)]">
                 {(["fr", "en", "nl"] as Lang[]).map((l) => (

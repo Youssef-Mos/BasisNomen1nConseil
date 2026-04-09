@@ -21,6 +21,8 @@ export default function PdfEditor({ documentId, documentTitle, pageCount }: Prop
   const [allRectangles, setAllRectangles] = useState<RectangleData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [justCreated, setJustCreated] = useState(false);
+  const [sessionCount, setSessionCount] = useState(0);
   const pdfUrl = `/api/documents/${documentId}/pdf`;
 
   // Global keyboard shortcuts for mode switching
@@ -103,6 +105,8 @@ export default function PdfEditor({ documentId, documentTitle, pageCount }: Prop
       setAllRectangles((prev) => [...prev, created]);
       setSelectedId(created.id);
       setDrawingMode("select");
+      setJustCreated(true);
+      setSessionCount((prev) => prev + 1);
       return created;
     } else {
       const err = await res.json();
@@ -199,6 +203,7 @@ export default function PdfEditor({ documentId, documentTitle, pageCount }: Prop
         pageCount={pageCount}
         drawingMode={drawingMode}
         analyzing={analyzing}
+        sessionCount={sessionCount}
         onPageChange={setCurrentPage}
         onModeChange={(mode) => {
           setDrawingMode(mode);
@@ -229,9 +234,18 @@ export default function PdfEditor({ documentId, documentTitle, pageCount }: Prop
           rectangle={selectedRect}
           allRectangles={allRectangles}
           documentId={documentId}
+          justCreated={justCreated}
           onUpdate={handleUpdate}
           onDelete={handleDeleteRect}
           onDeselect={() => setSelectedId(null)}
+          onAcknowledge={() => setJustCreated(false)}
+          onSaveSuccess={() => {
+            if (justCreated) {
+              setSelectedId(null);
+              setDrawingMode("fullWidth");
+              setJustCreated(false);
+            }
+          }}
         />
       </div>
     </div>
