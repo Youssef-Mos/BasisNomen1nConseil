@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { RECTANGLE_TYPES } from "@/lib/types";
 import { execFile } from "child_process";
 import { join } from "path";
 import { promisify } from "util";
@@ -105,14 +104,6 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
   const body = await request.json();
   const { fatherId, type, labels, textFr, textEn, textNl, page, x, y, width, height } = body;
-
-  // Validate type if provided
-  if (type && !RECTANGLE_TYPES.includes(type)) {
-    return NextResponse.json(
-      { error: `Invalid type. Must be one of: ${RECTANGLE_TYPES.join(", ")}` },
-      { status: 400 }
-    );
-  }
 
   // Detect if geometry changed
   const geometryChanged =

@@ -5,25 +5,21 @@
  */
 
 // ---------------------------------------------------------------------------
-// Rectangle type enum (mirrors Prisma RectangleType)
+// Rectangle type — free text string, no constraint on values
 // ---------------------------------------------------------------------------
 
-export const RECTANGLE_TYPES = [
-  "phrase",
-  "paragraph",
-  "article",
-  "section",
-  "figure",
-  "table",
-  "formula",
-  "annexe",
-] as const;
-
-export type RectangleType = (typeof RECTANGLE_TYPES)[number];
+export type RectangleType = string;
 
 // ---------------------------------------------------------------------------
 // Documents
 // ---------------------------------------------------------------------------
+
+export type NormData = {
+  id: string;
+  name: string;
+  description: string | null;
+  country: string;
+};
 
 export type DocumentListItem = {
   id: string;
@@ -31,6 +27,9 @@ export type DocumentListItem = {
   pageCount: number;
   rectangleCount: number;
   createdAt: string;
+  normId: string | null;
+  normName: string | null;
+  version: string | null;
 };
 
 export type DocumentDetail = DocumentListItem & {

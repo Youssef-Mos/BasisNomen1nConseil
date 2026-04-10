@@ -40,7 +40,7 @@ export async function GET(
   }
 
   // 5. Streamer avec headers de protection
-  return new Response(fileBuffer, {
+  return new Response(new Uint8Array(fileBuffer), {
     status: 200,
     headers: {
       "Content-Type": "image/png",

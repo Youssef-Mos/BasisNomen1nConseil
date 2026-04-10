@@ -4,8 +4,6 @@ import { useRef, useEffect, useState } from "react";
 import type { RectangleData, DrawingMode, RectangleCreateInput } from "@/lib/types";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 
-const SCALE = 1.5;
-
 // Type colors based on rectangle type
 const TYPE_COLORS: Record<string, string> = {
   phrase: "rgba(59, 130, 246, 0.25)",
@@ -57,7 +55,9 @@ export default function PdfCanvas({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
   const pdfDocRef = useRef<PDFDocumentProxy | null>(null);
+  const [scale, setScale] = useState(1.5);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [drawState, setDrawState] = useState<DrawState>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -81,6 +81,25 @@ export default function PdfCanvas({
     origRect: { x: number; y: number; width: number; height: number };
   } | null>(null);
 
+  // Dynamic scale: fit the PDF to the available container width
+  useEffect(() => {
+    const container = outerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0].contentRect.width;
+      // A4 = 595pt. Subtract 64px for internal padding on each side.
+      const available = width - 64;
+      const computed = available / 595;
+      // Clamp: 0.6 (tight half-screen) … 2.0 (large monitor)
+      const clamped = Math.min(2.0, Math.max(0.6, computed));
+      setScale(parseFloat(clamped.toFixed(2)));
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   // Load PDF and render page
   useEffect(() => {
     let cancelled = false;
@@ -99,7 +118,7 @@ export default function PdfCanvas({
         if (cancelled || !pdf) return;
 
         const pdfPage = await pdf.getPage(page);
-        const viewport = pdfPage.getViewport({ scale: SCALE });
+        const viewport = pdfPage.getViewport({ scale });
 
         const canvas = canvasRef.current;
         if (!canvas || cancelled) return;
@@ -123,7 +142,7 @@ export default function PdfCanvas({
     return () => {
       cancelled = true;
     };
-  }, [pdfUrl, page]);
+  }, [pdfUrl, page, scale]);
 
   // Cancel drawing preview when mode changes
   useEffect(() => {
@@ -323,7 +342,7 @@ export default function PdfCanvas({
         : null;
 
   return (
-    <div className="flex flex-col items-center p-4">
+    <div ref={outerRef} className="w-full flex flex-col items-center p-4">
       {/* Mode indicator banner */}
       {drawingMode !== "select" && (
         <div className="mb-3 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium shadow-md flex items-center gap-3">
@@ -390,9 +409,11 @@ export default function PdfCanvas({
               onClick={(e) => handleRectClick(e, rect.id)}
               onMouseDown={(e) => handleRectMouseDown(e, rect)}
             >
-              {/* Label badge */}
+              {/* Label badge — right of rect, or left if near the right edge */}
               <span
-                className="absolute -top-4 left-0 text-[9px] font-mono px-1 rounded whitespace-nowrap pointer-events-none"
+                className={`absolute top-0 text-[9px] font-mono px-1 rounded whitespace-nowrap pointer-events-none ${
+                  rect.x + rect.width > 80 ? "right-full mr-1" : "left-full ml-1"
+                }`}
                 style={{ backgroundColor: borderColor, color: "white" }}
               >
                 {rect.type}

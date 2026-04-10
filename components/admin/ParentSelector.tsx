@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { RECTANGLE_TYPES } from "@/lib/types";
-import type { RectangleData, RectangleType } from "@/lib/types";
+import type { RectangleData } from "@/lib/types";
 
 type Props = {
   value: string; // current fatherId or ""
@@ -37,7 +36,7 @@ export default function ParentSelector({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<RectangleType | "">("");
+  const [typeFilter, setTypeFilter] = useState<string>("");
   const panelRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -174,7 +173,7 @@ export default function ParentSelector({
             >
               All ({possibleParents.length})
             </button>
-            {RECTANGLE_TYPES.filter((t) => typeCounts[t]).map((t) => (
+            {Object.keys(typeCounts).map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(typeFilter === t ? "" : t)}
