@@ -5,27 +5,10 @@
  */
 
 // ---------------------------------------------------------------------------
-// Rectangle type enum (mirrors Prisma RectangleType)
+// Rectangle type — free text string, no constraint on values
 // ---------------------------------------------------------------------------
 
-export const RECTANGLE_TYPES = [
-  "phrase",
-  "paragraph",
-  "article",
-  "section",
-  "subsection",
-  "subSubsection",
-  "subSubSubsection",
-  "subSubSubSubsection",
-  "subSubSubSubSubsection",
-  "subSubSubSubSubSubsection",
-  "figure",
-  "table",
-  "formula",
-  "annexe",
-] as const;
-
-export type RectangleType = (typeof RECTANGLE_TYPES)[number];
+export type RectangleType = string;
 
 // ---------------------------------------------------------------------------
 // Documents

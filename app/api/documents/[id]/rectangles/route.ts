@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { RECTANGLE_TYPES } from "@/lib/types";
 import { execFile } from "child_process";
 import { join } from "path";
 import { promisify } from "util";
@@ -137,14 +136,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (page == null || x == null || y == null || width == null || height == null) {
     return NextResponse.json(
       { error: "Fields page, x, y, width, height are required." },
-      { status: 400 }
-    );
-  }
-
-  // Validate type if provided
-  if (type && !RECTANGLE_TYPES.includes(type)) {
-    return NextResponse.json(
-      { error: `Invalid type. Must be one of: ${RECTANGLE_TYPES.join(", ")}` },
       { status: 400 }
     );
   }

@@ -19,31 +19,6 @@ datasource db {
 }
 
 // -----------------------------------------------------------------------------
-// RectangleType
-//
-// Enum for the type of content a rectangle represents.
-// Jalon 2: added hierarchical subsection levels and orderOnPage on Rectangle.
-// NEVER remove or rename existing values — PostgreSQL rejects migrations that
-// drop enum values used by existing rows.
-// -----------------------------------------------------------------------------
-enum RectangleType {
-  phrase
-  paragraph
-  article
-  section
-  subsection
-  subSubsection
-  subSubSubsection
-  subSubSubSubsection
-  subSubSubSubSubsection
-  subSubSubSubSubSubsection
-  figure
-  table
-  formula
-  annexe
-}
-
-// -----------------------------------------------------------------------------
 // Norm
 //
 // A normative reference (e.g. "NBN S21-201").
@@ -107,7 +82,7 @@ model Rectangle {
   id          String        @id @default(cuid())
   documentId  String
   fatherId    String?
-  type        RectangleType @default(paragraph)
+  type        String        @default("paragraph")
   labels      String[]
   textFr      String?
   textEn      String?

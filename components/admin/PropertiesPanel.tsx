@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { RECTANGLE_TYPES } from "@/lib/types";
 import type { RectangleData, RectangleType } from "@/lib/types";
 import ParentSelector from "./ParentSelector";
 
@@ -21,23 +20,6 @@ function suggestType(parentType: string | null): RectangleType | null {
   if (!parentType) return null;
   return (TYPE_HIERARCHY[parentType] as RectangleType) ?? null;
 }
-
-const TYPE_DISPLAY_LABELS: Record<string, string> = {
-  phrase:                     "Phrase",
-  paragraph:                  "Paragraph",
-  article:                    "Article",
-  section:                    "Section (level 1)",
-  subsection:                 "Subsection (level 2)",
-  subSubsection:              "Sub-subsection (level 3)",
-  subSubSubsection:           "Sub-subsection (level 4)",
-  subSubSubSubsection:        "Sub-subsection (level 5)",
-  subSubSubSubSubsection:     "Sub-subsection (level 6)",
-  subSubSubSubSubSubsection:  "Sub-subsection (level 7)",
-  figure:                     "Figure",
-  table:                      "Table",
-  formula:                    "Formula",
-  annexe:                     "Annexe",
-};
 
 type Props = {
   rectangle: RectangleData | null;
@@ -63,8 +45,11 @@ export default function PropertiesPanel({
   onSaveSuccess,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const prevRectIdRef = useRef<string | null>(null);
   const [type, setType] = useState<RectangleType>("paragraph");
   const [typeManuallySet, setTypeManuallySet] = useState(false);
+  const [isCustomType, setIsCustomType] = useState(false);
+  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
   const [fatherId, setFatherId] = useState<string>("");
   const [labelsStr, setLabelsStr] = useState("");
   const [textFr, setTextFr] = useState("");
@@ -75,19 +60,40 @@ export default function PropertiesPanel({
   const [extractError, setExtractError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Sync form state when selection changes
+  // Fetch available types once on mount
   useEffect(() => {
-    if (rectangle) {
-      setType(rectangle.type);
-      setFatherId(rectangle.fatherId || "");
-      setLabelsStr(rectangle.labels.join(", "));
+    fetch("/api/rectangles/types")
+      .then((r) => r.json())
+      .then((data) => setAvailableTypes(data.types ?? []));
+  }, []);
+
+  // Sync form state when selection changes.
+  // Key fix: compare by ID so that a save (which creates a new object for the same
+  // rectangle) does NOT reset typeManuallySet and override what the admin typed.
+  useEffect(() => {
+    if (!rectangle) return;
+
+    if (rectangle.id === prevRectIdRef.current) {
+      // Same rectangle was updated (save response) — only refresh text fields
+      // from the server response; leave type/fatherId/labels as the admin set them.
       setTextFr(rectangle.textFr || "");
       setTextEn(rectangle.textEn || "");
       setTextNl(rectangle.textNl || "");
-      setExtractError(null);
-      setSaveSuccess(false);
-      setTypeManuallySet(false);
+      return;
     }
+
+    // Different rectangle selected — full reset
+    prevRectIdRef.current = rectangle.id;
+    setType(rectangle.type);
+    setFatherId(rectangle.fatherId || "");
+    setLabelsStr(rectangle.labels.join(", "));
+    setTextFr(rectangle.textFr || "");
+    setTextEn(rectangle.textEn || "");
+    setTextNl(rectangle.textNl || "");
+    setExtractError(null);
+    setSaveSuccess(false);
+    setTypeManuallySet(false);
+    setIsCustomType(false);
   }, [rectangle]);
 
   // Suggest type based on parent selection (only when admin hasn't chosen manually)
@@ -188,6 +194,13 @@ export default function PropertiesPanel({
       if (updated.textFr !== undefined) setTextFr(updated.textFr || "");
       if (updated.textEn !== undefined) setTextEn(updated.textEn || "");
       if (updated.textNl !== undefined) setTextNl(updated.textNl || "");
+
+      // If a new custom type was created, add it to the local list
+      if (isCustomType && type && !availableTypes.includes(type)) {
+        setAvailableTypes((prev) => [...prev, type].sort());
+      }
+      setIsCustomType(false);
+
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
       onAcknowledge?.();
@@ -291,20 +304,55 @@ export default function PropertiesPanel({
               <label className="block text-xs font-semibold text-(--text-secondary) uppercase tracking-wide mb-1.5">
                 Type
               </label>
-              <select
-                value={type}
-                onChange={(e) => {
-                  setType(e.target.value as RectangleType);
-                  setTypeManuallySet(true);
-                }}
-                className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-              >
-                {RECTANGLE_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {TYPE_DISPLAY_LABELS[t] ?? t}
-                  </option>
-                ))}
-              </select>
+              {isCustomType ? (
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    value={type}
+                    onChange={(e) => {
+                      setType(e.target.value);
+                      setTypeManuallySet(true);
+                    }}
+                    autoFocus
+                    placeholder="Enter new type name..."
+                    className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomType(false);
+                      setType(rectangle.type);
+                      setTypeManuallySet(false);
+                    }}
+                    className="text-xs text-(--text-muted) hover:text-(--text-primary) transition-colors"
+                  >
+                    ← Back to list
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={availableTypes.includes(type) ? type : type}
+                  onChange={(e) => {
+                    if (e.target.value === "__custom__") {
+                      setIsCustomType(true);
+                      setType("");
+                      setTypeManuallySet(true);
+                    } else {
+                      setType(e.target.value);
+                      setTypeManuallySet(true);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-(--border-default) rounded-md text-sm bg-(--bg-surface) text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                >
+                  {availableTypes.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                  {type && !availableTypes.includes(type) && (
+                    <option value={type}>{type}</option>
+                  )}
+                  <option value="__custom__">+ Create new type...</option>
+                </select>
+              )}
               {!typeManuallySet && fatherId && suggestType(allRectangles.find((r) => r.id === fatherId)?.type ?? null) && (
                 <p className="text-xs text-(--text-muted) mt-1">Suggested from parent</p>
               )}
