@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { execFile } from "child_process";
 import { join } from "path";
+import { existsSync } from "fs";
 import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
+
+function getPythonExecutable(): string {
+  const venvUnix = join(process.cwd(), ".venv", "bin", "python3");
+  if (existsSync(venvUnix)) return venvUnix;
+  const venvWin = join(process.cwd(), ".venv", "Scripts", "python.exe");
+  if (existsSync(venvWin)) return venvWin;
+  return "python3";
+}
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -37,7 +46,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
 
   try {
     const { stdout, stderr } = await execFileAsync(
-      "python3",
+      getPythonExecutable(),
       [
         scriptPath,
         pdfAbsPath,
