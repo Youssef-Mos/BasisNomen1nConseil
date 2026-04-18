@@ -25,6 +25,9 @@ Installer Node.js 20+, PostgreSQL 14+ et Python 3.10+.
 #### Ubuntu 24.04
 
 ```bash
+# Git
+sudo apt install -y git
+
 # Node.js
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
@@ -50,18 +53,28 @@ SQL
 
 #### Windows 10/11
 
-1. **Node.js** : télécharger et installer depuis [nodejs.org](https://nodejs.org) (LTS 20+)
-2. **PostgreSQL** : télécharger et installer depuis [postgresql.org](https://www.postgresql.org/download/windows/) — noter le mot de passe `postgres` choisi à l'installation
-3. **Python** : télécharger et installer depuis [python.org](https://www.python.org/downloads/) — cocher *"Add Python to PATH"* lors de l'installation
-4. **Tesseract** : télécharger et installer depuis [github.com/UB-Mannheim/tesseract](https://github.com/UB-Mannheim/tesseract/wiki)
+1. **Git** : télécharger et installer depuis [git-scm.com](https://git-scm.com/download/win)
+2. **Node.js** : télécharger et installer depuis [nodejs.org](https://nodejs.org) (LTS 20+)
+3. **PostgreSQL** : télécharger et installer depuis [postgresql.org](https://www.postgresql.org/download/windows/) — noter le mot de passe `postgres` choisi à l'installation
+4. **Python** : télécharger et installer depuis [python.org](https://www.python.org/downloads/) — cocher *"Add Python to PATH"* lors de l'installation
+5. **Tesseract** : télécharger et installer depuis [github.com/UB-Mannheim/tesseract](https://github.com/UB-Mannheim/tesseract/wiki) — cocher *"Add to PATH"* lors de l'installation
 
-Créer la base de données (dans pgAdmin ou PowerShell) :
+Créer la base de données — ouvrir **pgAdmin** ou lancer dans PowerShell :
+
+```powershell
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres
+```
+
+Puis dans le prompt psql :
 
 ```sql
 CREATE USER basis_user WITH PASSWORD 'basis_pass';
 CREATE DATABASE basis_norm_explorer OWNER basis_user;
 GRANT ALL PRIVILEGES ON DATABASE basis_norm_explorer TO basis_user;
+\q
 ```
+
+> Adapter le chemin `PostgreSQL\16` selon la version installée.
 
 ---
 
@@ -86,7 +99,13 @@ cp .env.example .env
 copy .env.example .env
 ```
 
-Contenu minimal de `.env` :
+Générer d'abord `ADMIN_SESSION_SECRET` (Node.js doit être installé) :
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Puis remplir `.env` :
 
 ```env
 DATABASE_URL="postgresql://basis_user:basis_pass@localhost:5432/basis_norm_explorer"
@@ -97,13 +116,7 @@ SMTP_PORT=587
 SMTP_USER=votre@email.com
 SMTP_PASS=mot-de-passe-smtp
 SMTP_FROM=noreply@example.com
-ADMIN_SESSION_SECRET=<générer ci-dessous>
-```
-
-Générer `ADMIN_SESSION_SECRET` (après `npm install`) :
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+ADMIN_SESSION_SECRET=<coller le résultat de la commande ci-dessus>
 ```
 
 ---
