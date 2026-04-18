@@ -1,5 +1,5 @@
 
-# dependenciepublic/pdf-pages/
+# dependencies
 /node_modules
 public/pdf-pages/
 /.pnp
@@ -36,6 +36,11 @@ yarn-error.log*
 # uploads (user PDFs)
 /uploads/
 
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+
 # vercel
 .vercel
 
@@ -46,5 +51,3 @@ CLAUDE.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-public/pdf-pages/

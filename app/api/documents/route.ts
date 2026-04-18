@@ -6,6 +6,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { getPythonExecutable } from "@/lib/python";
 
 const execFileAsync = promisify(execFile);
 
@@ -18,7 +19,7 @@ async function renderPagesForDocument(
   const scriptPath = join(process.cwd(), "python-pipeline", "render_pages.py");
   try {
     await execFileAsync(
-      "python3",
+      getPythonExecutable(),
       [scriptPath, pdfAbsPath, outputDir],
       { timeout: 300_000 }, // 5 min — large PDFs can be slow
     );
