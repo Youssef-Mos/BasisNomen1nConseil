@@ -34,7 +34,8 @@ sudo apt install -y postgresql postgresql-contrib
 sudo systemctl enable --now postgresql
 
 # Python (inclus par défaut, ajouter uniquement ces paquets)
-sudo apt install -y python3-venv python3-pip tesseract-ocr
+sudo apt install -y python3-venv python3-pip
+sudo apt install -y tesseract-ocr
 ```
 
 Créer la base de données :
