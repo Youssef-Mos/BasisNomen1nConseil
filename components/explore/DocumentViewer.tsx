@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FilterSidebar, {
   type FilterState,
-  EMPTY_FILTERS,
+  type NormFilterDef,
+  buildEmptyFilters,
   hasFilters,
 } from "./FilterSidebar";
 import type { RectClient, Lang } from "./shared";
-import { buildTreeMap } from "./shared";
+import { buildTreeMap, getEffectiveLabels } from "./shared";
 import TreeNode from "./TreeNode";
 import ResultCard from "./ResultCard";
 import Lightbox from "./Lightbox";
@@ -59,13 +60,14 @@ export default function DocumentViewer({
   doc,
   rectangles,
 }: {
-  doc: { id: string; title: string; pageCount: number };
+  doc: { id: string; title: string; pageCount: number; normId?: string | null };
   rectangles: RectClient[];
 }) {
   const [lang, setLang] = useState<Lang>("fr");
   const [popupBlocked, setPopupBlocked] = useState(false);
-  const [pendingFilters, setPendingFilters] = useState<FilterState>(EMPTY_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>(EMPTY_FILTERS);
+  const [filterDefs, setFilterDefs] = useState<NormFilterDef[]>([]);
+  const [pendingFilters, setPendingFilters] = useState<FilterState>({ search: "", topic: "" });
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>({ search: "", topic: "" });
   const [resultPage, setResultPage] = useState(1);
   const [results, setResults] = useState<RectClient[]>([]);
   const [totalResults, setTotalResults] = useState(0);
@@ -82,11 +84,27 @@ export default function DocumentViewer({
   const roots = useMemo(() => treeMap.get(null) ?? [], [treeMap]);
   const allLabels = useMemo(() => {
     const s = new Set<string>();
-    rectangles.forEach((r) => r.labels.forEach((l) => s.add(l)));
+    for (const r of rectangles) {
+      for (const l of getEffectiveLabels(r, rectById)) s.add(l);
+    }
     return [...s].sort();
-  }, [rectangles]);
+  }, [rectangles, rectById]);
 
   const isFiltered = hasFilters(appliedFilters);
+
+  // Fetch filter definitions for this document's norm
+  useEffect(() => {
+    if (!doc.normId) return;
+    fetch(`/api/norms/${doc.normId}/filters`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((defs: NormFilterDef[]) => {
+        setFilterDefs(defs);
+        const empty = buildEmptyFilters(defs);
+        setPendingFilters(empty);
+        setAppliedFilters(empty);
+      })
+      .catch(() => {});
+  }, [doc.normId]);
 
   const handleToggle = useCallback((id: string) => {
     setOpenIds((prev) => {
@@ -96,7 +114,7 @@ export default function DocumentViewer({
     });
   }, []);
 
-  function handlePendingChange(field: keyof FilterState, value: string) {
+  function handlePendingChange(field: string, value: string | string[]) {
     setPendingFilters((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -116,25 +134,38 @@ export default function DocumentViewer({
   }
 
   function handleClear() {
-    setPendingFilters(EMPTY_FILTERS);
-    setAppliedFilters(EMPTY_FILTERS);
+    const empty = buildEmptyFilters(filterDefs);
+    setPendingFilters(empty);
+    setAppliedFilters(empty);
     setResults([]);
     setTotalResults(0);
     setHasMore(false);
     setError(null);
   }
 
+  // Fetch filtered results
   useEffect(() => {
     if (!isFiltered) return;
 
     const params = new URLSearchParams();
-    if (appliedFilters.search)              params.set("keywords",             appliedFilters.search);
-    if (appliedFilters.topic)               params.set("topic",                appliedFilters.topic);
-    if (appliedFilters.projectAddress)      params.set("projectAddress",       appliedFilters.projectAddress);
-    if (appliedFilters.permitDate)          params.set("permitDate",           appliedFilters.permitDate);
-    if (appliedFilters.buildingHeightType)  params.set("buildingHeightType",   appliedFilters.buildingHeightType);
-    if (appliedFilters.compartmentCategory) params.set("compartmentCategory",  appliedFilters.compartmentCategory);
-    if (appliedFilters.roomCategory)        params.set("roomCategory",         appliedFilters.roomCategory);
+
+    // Built-in search/topic filters
+    const search = appliedFilters.search as string;
+    const topic = appliedFilters.topic as string;
+    if (search) params.set("keywords", search);
+    if (topic) params.set("topic", topic);
+
+    // Dynamic filters from definitions
+    for (const def of filterDefs) {
+      const val = appliedFilters[def.key];
+      if (!val) continue;
+      if (Array.isArray(val)) {
+        if (val.length > 0) params.set(def.key, val.join(","));
+      } else if (val !== "") {
+        params.set(def.key, val);
+      }
+    }
+
     params.set("page", String(resultPage));
     params.set("pageSize", "60");
 
@@ -158,7 +189,7 @@ export default function DocumentViewer({
       .finally(() => setLoading(false));
 
     return () => ac.abort();
-  }, [appliedFilters, doc.id, isFiltered, resultPage]);
+  }, [appliedFilters, doc.id, isFiltered, resultPage, filterDefs]);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-[var(--bg-page)] antialiased">
@@ -256,6 +287,7 @@ export default function DocumentViewer({
 
         {/* Sidebar */}
         <FilterSidebar
+          filterDefs={filterDefs}
           pending={pendingFilters}
           applied={appliedFilters}
           allLabels={allLabels}
@@ -274,7 +306,7 @@ export default function DocumentViewer({
                 <div className="flex items-center justify-between mb-6">
                   <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-widest">
                     {loading && resultPage === 1
-                      ? "Loading…"
+                      ? "Loading..."
                       : `${totalResults} result${totalResults !== 1 ? "s" : ""}`}
                   </p>
                   <button
@@ -292,7 +324,7 @@ export default function DocumentViewer({
                 )}
 
                 {loading && resultPage === 1 ? (
-                  <div className="py-24 text-center text-sm text-[var(--text-muted)]">Loading results…</div>
+                  <div className="py-24 text-center text-sm text-[var(--text-muted)]">Loading results...</div>
                 ) : results.length === 0 ? (
                   <div className="py-24 flex flex-col items-center gap-4 text-center">
                     <div className="w-14 h-14 rounded-2xl bg-[var(--bg-surface-2)] flex items-center justify-center">
@@ -316,7 +348,7 @@ export default function DocumentViewer({
                           rectById={rectById}
                           docId={doc.id}
                           lang={lang}
-                          query={appliedFilters.search}
+                          query={(appliedFilters.search as string) ?? ""}
                           onLightbox={setLightboxRect}
                         />
                       ))}
@@ -327,7 +359,7 @@ export default function DocumentViewer({
                         disabled={loading}
                         className="w-full mt-8 py-3.5 text-sm font-semibold text-blue-700 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors disabled:opacity-50"
                       >
-                        {loading ? "Loading…" : "Load more results"}
+                        {loading ? "Loading..." : "Load more results"}
                       </button>
                     )}
                   </>
@@ -353,6 +385,7 @@ export default function DocumentViewer({
                         docId={doc.id}
                         lang={lang}
                         treeMap={treeMap}
+                        rectById={rectById}
                         level={0}
                         openIds={openIds}
                         onToggle={handleToggle}

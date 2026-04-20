@@ -1,7 +1,7 @@
 "use client";
 
 import type { RectClient, Lang } from "./shared";
-import { getText, buildPath, typeStyle, TYPE_LABEL, truncate } from "./shared";
+import { getText, buildPath, getEffectiveLabels, typeStyle, TYPE_LABEL, truncate } from "./shared";
 import TypeBadge from "./ui/TypeBadge";
 import RectCrop from "./RectCrop";
 import TextPreview from "./ui/TextPreview";
@@ -84,19 +84,29 @@ export default function ResultCard({
         </div>
       )}
 
-      {/* Labels */}
-      {rect.labels.length > 0 && (
-        <div className="px-5 pb-4 flex flex-wrap gap-1.5">
-          {rect.labels.map((l) => (
-            <span
-              key={l}
-              className="text-[10px] font-medium px-2 py-1 rounded-md bg-(--bg-page) text-(--text-secondary) ring-1 ring-(--border-default)"
-            >
-              {l}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Labels (own + inherited from ancestors) */}
+      {(() => {
+        const effective = getEffectiveLabels(rect, rectById);
+        const ownSet = new Set(rect.labels);
+        if (effective.length === 0) return null;
+        return (
+          <div className="px-5 pb-4 flex flex-wrap gap-1.5">
+            {effective.map((l) => (
+              <span
+                key={l}
+                className={`text-[10px] font-medium px-2 py-1 rounded-md ring-1 ${
+                  ownSet.has(l)
+                    ? "bg-(--bg-page) text-(--text-secondary) ring-(--border-default)"
+                    : "bg-blue-50/50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 ring-blue-200/50 dark:ring-blue-800/50 italic"
+                }`}
+                title={ownSet.has(l) ? "Own label" : "Inherited from parent"}
+              >
+                {l}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import type { RectClient, Lang, TreeMap } from "./shared";
-import { getText, TYPE_LABEL, truncate } from "./shared";
+import { getText, getEffectiveLabels, TYPE_LABEL, truncate } from "./shared";
 import TypeBadge from "./ui/TypeBadge";
 import RectCrop from "./RectCrop";
 import TextPreview from "./ui/TextPreview";
@@ -36,6 +36,7 @@ export default function TreeNode({
   docId,
   lang,
   treeMap,
+  rectById,
   level,
   openIds,
   onToggle,
@@ -45,6 +46,7 @@ export default function TreeNode({
   docId: string;
   lang: Lang;
   treeMap: TreeMap;
+  rectById: Map<string, RectClient>;
   level: number;
   openIds: Set<string>;
   onToggle: (id: string) => void;
@@ -127,6 +129,30 @@ export default function TreeNode({
             )}
           </div>
 
+          {/* Effective labels (own + inherited) */}
+          {(() => {
+            const effective = getEffectiveLabels(rect, rectById);
+            const ownSet = new Set(rect.labels);
+            if (effective.length === 0) return null;
+            return (
+              <div className="flex flex-wrap gap-1.5 mb-5">
+                {effective.map((l) => (
+                  <span
+                    key={l}
+                    className={`text-[10px] font-medium px-2 py-1 rounded-md ring-1 ${
+                      ownSet.has(l)
+                        ? "bg-(--bg-page) text-(--text-secondary) ring-(--border-default)"
+                        : "bg-blue-50/50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 ring-blue-200/50 dark:ring-blue-800/50 italic"
+                    }`}
+                    title={ownSet.has(l) ? "Own label" : "Inherited from parent"}
+                  >
+                    {l}
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
+
           {/* Children with left guide */}
           {children.length > 0 && (
             <div className="border-l border-(--border-default) pl-4 space-y-1">
@@ -137,6 +163,7 @@ export default function TreeNode({
                   docId={docId}
                   lang={lang}
                   treeMap={treeMap}
+                  rectById={rectById}
                   level={level + 1}
                   openIds={openIds}
                   onToggle={onToggle}

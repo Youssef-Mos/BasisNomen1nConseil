@@ -31,6 +31,7 @@ model Norm {
   country     String     @default("BE")
   createdAt   DateTime   @default(now())
   documents   Document[]
+  filters     NormFilter[]
 
   @@map("norms")
 }
@@ -104,6 +105,30 @@ model Rectangle {
   @@index([documentId, page])
   @@index([fatherId])
   @@map("rectangles")
+}
+
+// -----------------------------------------------------------------------------
+// NormFilter
+//
+// Dynamic filter definitions per norm. Admin-manageable via the UI.
+// Each row defines one filter control in the explore sidebar.
+// -----------------------------------------------------------------------------
+model NormFilter {
+  id        String   @id @default(cuid())
+  normId    String
+  key       String
+  label     String
+  section   String
+  type      String   // "select" | "text" | "multiselect" | "boolean"
+  options   String[]
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  norm Norm @relation(fields: [normId], references: [id], onDelete: Cascade)
+
+  @@unique([normId, key])
+  @@index([normId])
+  @@map("norm_filters")
 }
 
 // -----------------------------------------------------------------------------

@@ -258,6 +258,16 @@ export default function DocumentList() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
+                {doc.normId && (
+                  <a
+                    href={`/admin/norms/${doc.normId}/filters`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-all"
+                    title="Manage filters for this norm"
+                  >
+                    Filters
+                  </a>
+                )}
                 <button
                   onClick={(e) => handleDelete(e, doc.id, doc.title)}
                   className="px-2 py-1 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all"

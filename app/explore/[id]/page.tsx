@@ -11,7 +11,7 @@ export default async function ExploreDocumentPage({ params }: Props) {
 
   const doc = await prisma.document.findUnique({
     where: { id },
-    select: { id: true, title: true, pageCount: true },
+    select: { id: true, title: true, pageCount: true, normId: true },
   });
 
   if (!doc) notFound();

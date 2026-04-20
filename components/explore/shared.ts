@@ -115,6 +115,19 @@ export function buildPath(rect: RectClient, rectById: Map<string, RectClient>): 
   return chain;
 }
 
+/**
+ * Compute effective labels for a rectangle: its own labels merged with
+ * all ancestor labels (recursive inheritance per spec).
+ */
+export function getEffectiveLabels(rect: RectClient, rectById: Map<string, RectClient>): string[] {
+  const path = buildPath(rect, rectById);
+  const all = new Set<string>();
+  for (const node of path) {
+    for (const l of node.labels) all.add(l);
+  }
+  return [...all];
+}
+
 export function cropImageUrl(_docId: string, rectId: string): string {
   return `/api/crop/${rectId}`;
 }

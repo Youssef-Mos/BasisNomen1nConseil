@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildEffectiveLabelsMap } from "@/lib/labels";
 import { execFile } from "child_process";
 import { join } from "path";
 import { promisify } from "util";
@@ -36,22 +37,15 @@ async function generateCropForRect(
 type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/documents/:id/rectangles — rectangles for a document with filters
-// Query params:
-//   keywords, topic, projectAddress, permitDate, buildingHeightType,
-//   compartmentCategory, roomCategory,
-//   pdfPage (filter by PDF page number),
-//   page (pagination index), pageSize
+// Supports dynamic filters defined in the norm_filters table, plus built-in
+// keywords and topic filters. All filters are combined with AND logic.
 export async function GET(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
   const { searchParams } = new URL(request.url);
 
+  // Built-in text search (backward-compatible)
   const keywords = searchParams.get("keywords")?.trim();
   const topic = searchParams.get("topic")?.trim();
-  const projectAddress = searchParams.get("projectAddress")?.trim();
-  const permitDate = searchParams.get("permitDate")?.trim();
-  const buildingHeightType = searchParams.get("buildingHeightType")?.trim();
-  const compartmentCategory = searchParams.get("compartmentCategory")?.trim();
-  const roomCategory = searchParams.get("roomCategory")?.trim();
 
   const pdfPageParam = searchParams.get("pdfPage");
   const pdfPage = pdfPageParam ? Number(pdfPageParam) : null;
@@ -72,22 +66,122 @@ export async function GET(request: NextRequest, context: RouteContext) {
     filters.push({ page: pdfPage });
   }
 
-  const textSearch = keywords || projectAddress || permitDate;
-  if (textSearch) {
+  // Text search: keywords act as a case-insensitive contains on all text columns.
+  if (keywords) {
     filters.push({
       OR: [
-        { textFr: { contains: textSearch, mode: "insensitive" } },
-        { textEn: { contains: textSearch, mode: "insensitive" } },
-        { textNl: { contains: textSearch, mode: "insensitive" } },
+        { textFr: { contains: keywords, mode: "insensitive" } },
+        { textEn: { contains: keywords, mode: "insensitive" } },
+        { textNl: { contains: keywords, mode: "insensitive" } },
       ],
     });
   }
 
-  // Label-driven filters use Prisma array queries to stay server-side.
-  if (topic) filters.push({ labels: { has: topic } });
-  if (buildingHeightType) filters.push({ labels: { has: buildingHeightType } });
-  if (compartmentCategory) filters.push({ labels: { has: compartmentCategory } });
-  if (roomCategory) filters.push({ labels: { has: roomCategory } });
+  // Fetch the document's norm to get dynamic filter definitions
+  const doc = await prisma.document.findUnique({
+    where: { id },
+    select: { normId: true },
+  });
+
+  // Collect all label-based filter values (topic + dynamic filters)
+  const labelFilters: string[] = [];
+  if (topic) labelFilters.push(topic);
+
+  // Dynamic text search filters (from norm filter definitions)
+  const textSearchValues: string[] = [];
+
+  if (doc?.normId) {
+    const filterDefs = await prisma.normFilter.findMany({
+      where: { normId: doc.normId },
+    });
+
+    for (const def of filterDefs) {
+      const paramVal = searchParams.get(def.key)?.trim();
+      if (!paramVal) continue;
+
+      switch (def.type) {
+        case "select":
+          labelFilters.push(paramVal);
+          break;
+
+        case "multiselect": {
+          // Comma-separated values from query param
+          const vals = paramVal.split(",").map((v) => v.trim()).filter(Boolean);
+          for (const v of vals) labelFilters.push(v);
+          break;
+        }
+
+        case "boolean":
+          // "yes" → look for the label matching the filter key/label
+          // "no" → exclude rectangles with that label (handled separately below)
+          if (paramVal === "yes") {
+            labelFilters.push(def.label);
+          }
+          break;
+
+        case "text":
+          textSearchValues.push(paramVal);
+          break;
+      }
+    }
+  }
+
+  // Apply additional text search filters from dynamic "text" type filters
+  for (const textVal of textSearchValues) {
+    filters.push({
+      OR: [
+        { textFr: { contains: textVal, mode: "insensitive" } },
+        { textEn: { contains: textVal, mode: "insensitive" } },
+        { textNl: { contains: textVal, mode: "insensitive" } },
+      ],
+    });
+  }
+
+  // Label-driven filters: use inherited labels (own + ancestors') per spec.
+  if (labelFilters.length > 0) {
+    const allRects = await prisma.rectangle.findMany({
+      where: { documentId: id },
+      select: { id: true, labels: true, fatherId: true },
+    });
+    const effectiveLabelsMap = buildEffectiveLabelsMap(allRects);
+
+    const passingIds = new Set<string>();
+    for (const rect of allRects) {
+      const effective = effectiveLabelsMap.get(rect.id) ?? [];
+      if (labelFilters.every((lf) => effective.includes(lf))) {
+        passingIds.add(rect.id);
+      }
+    }
+
+    filters.push({ id: { in: [...passingIds] } });
+  }
+
+  // Handle boolean "no" filters — exclude rectangles that have the label
+  if (doc?.normId) {
+    const filterDefs = await prisma.normFilter.findMany({
+      where: { normId: doc.normId, type: "boolean" },
+    });
+    for (const def of filterDefs) {
+      const paramVal = searchParams.get(def.key)?.trim();
+      if (paramVal === "no") {
+        const allRects = await prisma.rectangle.findMany({
+          where: { documentId: id },
+          select: { id: true, labels: true, fatherId: true },
+        });
+        const effectiveLabelsMap = buildEffectiveLabelsMap(allRects);
+        const excludeIds: string[] = [];
+        for (const rect of allRects) {
+          const effective = effectiveLabelsMap.get(rect.id) ?? [];
+          if (effective.includes(def.label)) {
+            excludeIds.push(rect.id);
+          }
+        }
+        if (excludeIds.length > 0) {
+          filters.push({ id: { notIn: excludeIds } });
+        }
+      }
+    }
+  }
 
   const where = filters.length ? { AND: filters } : { documentId: id };
 
