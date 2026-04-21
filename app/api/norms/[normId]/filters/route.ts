@@ -3,23 +3,24 @@ import { prisma } from "@/lib/prisma";
 
 type RouteContext = { params: Promise<{ normId: string }> };
 
-// GET /api/norms/:normId/filters — list all filters for a norm
+// GET /api/norms/:normId/filters — list filters for a norm (includes global filters where normId is null)
 export async function GET(_request: NextRequest, context: RouteContext) {
   const { normId } = await context.params;
 
   const filters = await prisma.normFilter.findMany({
-    where: { normId },
+    where: {
+      OR: [{ normId }, { normId: null }],
+    },
     orderBy: { sortOrder: "asc" },
   });
 
   return NextResponse.json(filters);
 }
 
-// POST /api/norms/:normId/filters — create a new filter
+// POST kept for backward compatibility — delegates to the global route logic
 export async function POST(request: NextRequest, context: RouteContext) {
   const { normId } = await context.params;
 
-  // Verify norm exists
   const norm = await prisma.norm.findUnique({ where: { id: normId }, select: { id: true } });
   if (!norm) {
     return NextResponse.json({ error: "Norm not found." }, { status: 404 });
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const validTypes = ["select", "text", "multiselect", "boolean"];
+  const validTypes = ["select", "text", "multiselect", "boolean", "number", "range", "date"];
   if (!validTypes.includes(type)) {
     return NextResponse.json(
       { error: `Invalid type. Must be one of: ${validTypes.join(", ")}` },
@@ -43,9 +44,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  // Check uniqueness of key within norm
-  const existing = await prisma.normFilter.findUnique({
-    where: { normId_key: { normId, key } },
+  const existing = await prisma.normFilter.findFirst({
+    where: { normId, key },
   });
   if (existing) {
     return NextResponse.json(

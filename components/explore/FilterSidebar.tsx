@@ -7,7 +7,7 @@ export type NormFilterDef = {
   key: string;
   label: string;
   section: string;
-  type: string; // "select" | "text" | "multiselect" | "boolean"
+  type: string; // "select" | "text" | "multiselect" | "boolean" | "number" | "range" | "date"
   options: string[];
   sortOrder: number;
 };
@@ -105,6 +105,37 @@ function buildFilterLabels(defs: NormFilterDef[]): Record<string, string> {
     labels[d.key] = d.label;
   }
   return labels;
+}
+
+// ─── Number/Range config parser ───────────────────────────────────────────────
+
+export function parseNumberConfig(options: string[]): {
+  min?: number;
+  max?: number;
+  step: number;
+  unit: string;
+  operator: string;
+} {
+  const config: { min?: number; max?: number; step: number; unit: string; operator: string } = {
+    step: 1,
+    unit: "",
+    operator: "eq",
+  };
+  for (const opt of options) {
+    const idx = opt.indexOf(":");
+    if (idx === -1) continue;
+    const k = opt.slice(0, idx).trim();
+    const v = opt.slice(idx + 1).trim();
+    if (k === "min" || k === "max" || k === "step") {
+      const n = Number(v);
+      if (Number.isFinite(n)) config[k] = n;
+    } else if (k === "unit") {
+      config.unit = v;
+    } else if (k === "operator") {
+      config.operator = v;
+    }
+  }
+  return config;
 }
 
 // ─── FilterSidebar ────────────────────────────────────────────────────────────
@@ -211,6 +242,83 @@ export default function FilterSidebar({ filterDefs, pending, applied, allLabels,
                 <option value="no">No</option>
               </select>
             </SelectWrapper>
+          </Field>
+        );
+
+      case "number": {
+        const cfg = parseNumberConfig(def.options);
+        const labelWithUnit = cfg.unit ? `${def.label} (${cfg.unit})` : def.label;
+        const operatorLabels: Record<string, string> = {
+          eq: "=", gte: "≥", lte: "≤", gt: ">", lt: "<",
+        };
+        const opSymbol = operatorLabels[cfg.operator] ?? "=";
+        return (
+          <Field key={def.key} label={labelWithUnit}>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-[var(--text-muted)] shrink-0 w-4 text-center">{opSymbol}</span>
+              <input
+                type="number"
+                value={(val as string) ?? ""}
+                onChange={(e) => onChange(def.key, e.target.value)}
+                onKeyDown={handleKeyDown}
+                min={cfg.min}
+                max={cfg.max}
+                step={cfg.step}
+                placeholder={`Valeur${cfg.unit ? ` en ${cfg.unit}` : ""}...`}
+                className={INPUT}
+              />
+            </div>
+          </Field>
+        );
+      }
+
+      case "range": {
+        const cfg = parseNumberConfig(def.options);
+        const labelWithUnit = cfg.unit ? `${def.label} (${cfg.unit})` : def.label;
+        const strVal = (val as string) ?? "";
+        const parts = strVal.split("-");
+        const minVal = parts[0] ?? "";
+        const maxVal = parts[1] ?? "";
+        return (
+          <Field key={def.key} label={labelWithUnit}>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={minVal}
+                onChange={(e) => onChange(def.key, `${e.target.value}-${maxVal}`)}
+                onKeyDown={handleKeyDown}
+                min={cfg.min}
+                max={cfg.max}
+                step={cfg.step}
+                placeholder="Min"
+                className={INPUT}
+              />
+              <span className="text-sm text-[var(--text-muted)] shrink-0">—</span>
+              <input
+                type="number"
+                value={maxVal}
+                onChange={(e) => onChange(def.key, `${minVal}-${e.target.value}`)}
+                onKeyDown={handleKeyDown}
+                min={cfg.min}
+                max={cfg.max}
+                step={cfg.step}
+                placeholder="Max"
+                className={INPUT}
+              />
+            </div>
+          </Field>
+        );
+      }
+
+      case "date":
+        return (
+          <Field key={def.key} label={def.label}>
+            <input
+              type="date"
+              value={(val as string) ?? ""}
+              onChange={(e) => onChange(def.key, e.target.value)}
+              className={INPUT}
+            />
           </Field>
         );
 

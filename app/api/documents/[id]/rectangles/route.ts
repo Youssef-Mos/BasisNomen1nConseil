@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { buildEffectiveLabelsMap } from "@/lib/labels";
+import { parseNumberConfig } from "@/components/explore/FilterSidebar";
 import { execFile } from "child_process";
 import { join } from "path";
 import { promisify } from "util";
@@ -90,39 +91,66 @@ export async function GET(request: NextRequest, context: RouteContext) {
   // Dynamic text search filters (from norm filter definitions)
   const textSearchValues: string[] = [];
 
-  if (doc?.normId) {
-    const filterDefs = await prisma.normFilter.findMany({
-      where: { normId: doc.normId },
-    });
+  // Numeric filters (number / range types)
+  type NumericFilter =
+    | { kind: "number"; label: string; value: number; operator: string }
+    | { kind: "range"; label: string; min: number; max: number }
+    | { kind: "date"; label: string; value: string };
+  const numericFilters: NumericFilter[] = [];
 
-    for (const def of filterDefs) {
-      const paramVal = searchParams.get(def.key)?.trim();
-      if (!paramVal) continue;
+  // Fetch filter definitions: norm-specific + global (normId=null)
+  const normFilterWhere = doc?.normId
+    ? { OR: [{ normId: doc.normId }, { normId: null }] }
+    : { normId: null };
+  const filterDefs = await prisma.normFilter.findMany({ where: normFilterWhere });
 
-      switch (def.type) {
-        case "select":
-          labelFilters.push(paramVal);
-          break;
+  for (const def of filterDefs) {
+    const paramVal = searchParams.get(def.key)?.trim();
+    if (!paramVal) continue;
 
-        case "multiselect": {
-          // Comma-separated values from query param
-          const vals = paramVal.split(",").map((v) => v.trim()).filter(Boolean);
-          for (const v of vals) labelFilters.push(v);
-          break;
-        }
+    switch (def.type) {
+      case "select":
+        labelFilters.push(paramVal);
+        break;
 
-        case "boolean":
-          // "yes" → look for the label matching the filter key/label
-          // "no" → exclude rectangles with that label (handled separately below)
-          if (paramVal === "yes") {
-            labelFilters.push(def.label);
-          }
-          break;
-
-        case "text":
-          textSearchValues.push(paramVal);
-          break;
+      case "multiselect": {
+        const vals = paramVal.split(",").map((v) => v.trim()).filter(Boolean);
+        for (const v of vals) labelFilters.push(v);
+        break;
       }
+
+      case "boolean":
+        if (paramVal === "yes") {
+          labelFilters.push(def.label);
+        }
+        break;
+
+      case "text":
+        textSearchValues.push(paramVal);
+        break;
+
+      case "number": {
+        const numVal = Number(paramVal);
+        if (Number.isFinite(numVal)) {
+          const cfg = parseNumberConfig(def.options);
+          numericFilters.push({ kind: "number", label: def.label, value: numVal, operator: cfg.operator });
+        }
+        break;
+      }
+
+      case "range": {
+        const parts = paramVal.split("-");
+        const minVal = Number(parts[0]);
+        const maxVal = Number(parts[1]);
+        if (Number.isFinite(minVal) && Number.isFinite(maxVal)) {
+          numericFilters.push({ kind: "range", label: def.label, min: minVal, max: maxVal });
+        }
+        break;
+      }
+
+      case "date":
+        numericFilters.push({ kind: "date", label: def.label, value: paramVal });
+        break;
     }
   }
 
@@ -135,6 +163,56 @@ export async function GET(request: NextRequest, context: RouteContext) {
         { textNl: { contains: textVal, mode: "insensitive" } },
       ],
     });
+  }
+
+  // Numeric / range / date filters: extract numbers from labels and compare
+  if (numericFilters.length > 0) {
+    const allRects = await prisma.rectangle.findMany({
+      where: { documentId: id },
+      select: { id: true, labels: true, fatherId: true },
+    });
+    const effectiveLabelsMap = buildEffectiveLabelsMap(allRects);
+
+    const passingIds = new Set<string>();
+    for (const rect of allRects) {
+      const effective = effectiveLabelsMap.get(rect.id) ?? [];
+      const passesAll = numericFilters.every((nf) => {
+        // Find a label that relates to this filter
+        const matchingLabel = effective.find((l) =>
+          l.toLowerCase().includes(nf.label.toLowerCase())
+        );
+        if (!matchingLabel) return false;
+
+        if (nf.kind === "date") {
+          // Date comparison: the label should contain a date string
+          return matchingLabel.includes(nf.value);
+        }
+
+        // Extract the first number from the matching label
+        const numMatch = matchingLabel.match(/-?\d+(\.\d+)?/);
+        if (!numMatch) return false;
+        const extracted = Number(numMatch[0]);
+
+        if (nf.kind === "number") {
+          switch (nf.operator) {
+            case "gte": return extracted >= nf.value;
+            case "lte": return extracted <= nf.value;
+            case "gt":  return extracted > nf.value;
+            case "lt":  return extracted < nf.value;
+            case "eq":
+            default:    return extracted === nf.value;
+          }
+        }
+
+        if (nf.kind === "range") {
+          return extracted >= nf.min && extracted <= nf.max;
+        }
+
+        return false;
+      });
+      if (passesAll) passingIds.add(rect.id);
+    }
+    filters.push({ id: { in: [...passingIds] } });
   }
 
   // Label-driven filters: use inherited labels (own + ancestors') per spec.
@@ -157,28 +235,24 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   // Handle boolean "no" filters — exclude rectangles that have the label
-  if (doc?.normId) {
-    const filterDefs = await prisma.normFilter.findMany({
-      where: { normId: doc.normId, type: "boolean" },
-    });
-    for (const def of filterDefs) {
-      const paramVal = searchParams.get(def.key)?.trim();
-      if (paramVal === "no") {
-        const allRects = await prisma.rectangle.findMany({
-          where: { documentId: id },
-          select: { id: true, labels: true, fatherId: true },
-        });
-        const effectiveLabelsMap = buildEffectiveLabelsMap(allRects);
-        const excludeIds: string[] = [];
-        for (const rect of allRects) {
-          const effective = effectiveLabelsMap.get(rect.id) ?? [];
-          if (effective.includes(def.label)) {
-            excludeIds.push(rect.id);
-          }
+  const booleanNoDefs = filterDefs.filter((d) => d.type === "boolean");
+  for (const def of booleanNoDefs) {
+    const paramVal = searchParams.get(def.key)?.trim();
+    if (paramVal === "no") {
+      const allRects = await prisma.rectangle.findMany({
+        where: { documentId: id },
+        select: { id: true, labels: true, fatherId: true },
+      });
+      const effectiveLabelsMap = buildEffectiveLabelsMap(allRects);
+      const excludeIds: string[] = [];
+      for (const rect of allRects) {
+        const effective = effectiveLabelsMap.get(rect.id) ?? [];
+        if (effective.includes(def.label)) {
+          excludeIds.push(rect.id);
         }
-        if (excludeIds.length > 0) {
-          filters.push({ id: { notIn: excludeIds } });
-        }
+      }
+      if (excludeIds.length > 0) {
+        filters.push({ id: { notIn: excludeIds } });
       }
     }
   }

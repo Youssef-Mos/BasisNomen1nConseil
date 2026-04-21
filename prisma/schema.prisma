@@ -110,12 +110,13 @@ model Rectangle {
 // -----------------------------------------------------------------------------
 // NormFilter
 //
-// Dynamic filter definitions per norm. Admin-manageable via the UI.
+// Dynamic filter definitions. Admin-manageable via the UI.
+// normId = null means the filter applies to ALL norms.
 // Each row defines one filter control in the explore sidebar.
 // -----------------------------------------------------------------------------
 model NormFilter {
   id        String   @id @default(cuid())
-  normId    String
+  normId    String?
   key       String
   label     String
   section   String
@@ -124,7 +125,7 @@ model NormFilter {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
-  norm Norm @relation(fields: [normId], references: [id], onDelete: Cascade)
+  norm Norm? @relation(fields: [normId], references: [id], onDelete: Cascade)
 
   @@unique([normId, key])
   @@index([normId])

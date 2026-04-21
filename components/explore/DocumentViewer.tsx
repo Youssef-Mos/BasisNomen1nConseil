@@ -92,14 +92,20 @@ export default function DocumentViewer({
 
   const isFiltered = hasFilters(appliedFilters);
 
-  // Fetch filter definitions for this document's norm
+  // Fetch filter definitions: norm-specific + global (normId=null)
+  // If the document has a norm, GET /api/norms/:normId/filters returns both.
+  // If no norm, GET /api/filters returns all (we filter to global only).
   useEffect(() => {
-    if (!doc.normId) return;
-    fetch(`/api/norms/${doc.normId}/filters`)
+    const url = doc.normId
+      ? `/api/norms/${doc.normId}/filters`
+      : `/api/filters`;
+    fetch(url)
       .then((res) => (res.ok ? res.json() : []))
       .then((defs: NormFilterDef[]) => {
-        setFilterDefs(defs);
-        const empty = buildEmptyFilters(defs);
+        // If no norm, only keep global filters (normId === null)
+        const filtered = doc.normId ? defs : defs.filter((d: any) => d.normId === null);
+        setFilterDefs(filtered);
+        const empty = buildEmptyFilters(filtered);
         setPendingFilters(empty);
         setAppliedFilters(empty);
       })
