@@ -8,6 +8,96 @@ import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 
+// ─── Relevance scoring (CDC jalon 2) ──────────────────────────────────────────
+// Sort filtered results by relevance, not by PDF reading order.
+// Score is computed in memory because it depends on per-rectangle inheritance
+// and on filter-type-specific match quality (own vs inherited label, whole-word
+// vs substring text match) that cannot be expressed in a Prisma orderBy.
+
+type ActiveFilterInfo =
+  | { kind: "text"; value: string }
+  | { kind: "label"; value: string }
+  | { kind: "boolean" }
+  | { kind: "numeric" };
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Type-of-rectangle bonus (always applied when filters are active).
+// Mapping follows shared.ts type names:
+//   article → +5, section → +3, all sub-section levels + paragraph → +1,
+//   phrase / figure / table / formula / annexe → +0.
+function typeBonus(type: string): number {
+  switch (type) {
+    case "article":
+      return 5;
+    case "section":
+      return 3;
+    case "subsection":
+    case "subSubsection":
+    case "subSubSubsection":
+    case "subSubSubSubsection":
+    case "subSubSubSubSubsection":
+    case "subSubSubSubSubSubsection":
+    case "paragraph":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function scoreText(
+  rect: { textFr: string | null; textEn: string | null; textNl: string | null },
+  query: string,
+): number {
+  const haystack = [rect.textFr, rect.textEn, rect.textNl]
+    .filter((s): s is string => !!s)
+    .join("\n");
+  if (!haystack) return 0;
+  if (!haystack.toLowerCase().includes(query.toLowerCase())) return 0;
+  const wordRe = new RegExp(`\\b${escapeRegex(query)}\\b`, "i");
+  return wordRe.test(haystack) ? 40 : 20;
+}
+
+function computeRelevanceScore(
+  rect: {
+    type: string;
+    labels: string[];
+    textFr: string | null;
+    textEn: string | null;
+    textNl: string | null;
+  },
+  effective: string[],
+  filters: ActiveFilterInfo[],
+): number {
+  if (filters.length === 0) return 0;
+
+  let score = 0;
+  const ownSet = new Set(rect.labels);
+
+  for (const f of filters) {
+    switch (f.kind) {
+      case "text":
+        score += scoreText(rect, f.value);
+        break;
+      case "label":
+        if (ownSet.has(f.value)) score += 30;
+        else if (effective.includes(f.value)) score += 10;
+        break;
+      case "boolean":
+        score += 15;
+        break;
+      case "numeric":
+        score += 25;
+        break;
+    }
+  }
+
+  score += typeBonus(rect.type);
+  return score;
+}
+
 async function generateCropForRect(
   pdfPath: string,
   docId: string,
@@ -91,6 +181,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
   // Dynamic text search filters (from norm filter definitions)
   const textSearchValues: string[] = [];
 
+  // Active filters tracked separately for relevance scoring.
+  // The scoring rules differ per filter type, so we keep this typed list
+  // alongside the where-clause construction below.
+  const activeFilters: ActiveFilterInfo[] = [];
+  if (keywords) activeFilters.push({ kind: "text", value: keywords });
+  if (topic) activeFilters.push({ kind: "label", value: topic });
+
   // Numeric filters (number / range types)
   type NumericFilter =
     | { kind: "number"; label: string; value: number; operator: string }
@@ -111,11 +208,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
     switch (def.type) {
       case "select":
         labelFilters.push(paramVal);
+        activeFilters.push({ kind: "label", value: paramVal });
         break;
 
       case "multiselect": {
         const vals = paramVal.split(",").map((v) => v.trim()).filter(Boolean);
-        for (const v of vals) labelFilters.push(v);
+        for (const v of vals) {
+          labelFilters.push(v);
+          activeFilters.push({ kind: "label", value: v });
+        }
         break;
       }
 
@@ -123,10 +224,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
         if (paramVal === "yes") {
           labelFilters.push(def.label);
         }
+        if (paramVal === "yes" || paramVal === "no") {
+          activeFilters.push({ kind: "boolean" });
+        }
         break;
 
       case "text":
         textSearchValues.push(paramVal);
+        activeFilters.push({ kind: "text", value: paramVal });
         break;
 
       case "number": {
@@ -134,6 +239,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         if (Number.isFinite(numVal)) {
           const cfg = parseNumberConfig(def.options);
           numericFilters.push({ kind: "number", label: def.label, value: numVal, operator: cfg.operator });
+          activeFilters.push({ kind: "numeric" });
         }
         break;
       }
@@ -144,12 +250,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
         const maxVal = Number(parts[1]);
         if (Number.isFinite(minVal) && Number.isFinite(maxVal)) {
           numericFilters.push({ kind: "range", label: def.label, min: minVal, max: maxVal });
+          activeFilters.push({ kind: "numeric" });
         }
         break;
       }
 
       case "date":
         numericFilters.push({ kind: "date", label: def.label, value: paramVal });
+        activeFilters.push({ kind: "numeric" });
         break;
     }
   }
@@ -258,30 +366,67 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   const where = filters.length ? { AND: filters } : { documentId: id };
+  const include = {
+    father: { select: { id: true, type: true, labels: true } },
+    children: { select: { id: true, type: true, labels: true, page: true } },
+  } as const;
 
-  const [rectangles, total] = await Promise.all([
+  // No active filters → keep PDF reading order with DB-level pagination.
+  // Every item gets relevanceScore: 0 (uniform, no ranking signal exists).
+  if (activeFilters.length === 0) {
+    const [rectangles, total] = await Promise.all([
+      prisma.rectangle.findMany({
+        where,
+        orderBy: [{ page: "asc" }, { y: "asc" }, { x: "asc" }],
+        skip,
+        take: pageSize,
+        include,
+      }),
+      prisma.rectangle.count({ where }),
+    ]);
+
+    const items = rectangles.map((r) => ({ ...r, relevanceScore: 0 }));
+    const hasMore = skip + items.length < total;
+
+    return NextResponse.json({ items, page, pageSize, total, hasMore });
+  }
+
+  // Active filters → score every match in memory, sort by relevance, paginate.
+  // We must compute effective labels with the FULL document tree (parents may
+  // contribute labels that the filtered set alone wouldn't see).
+  const [matched, treeForLabels] = await Promise.all([
     prisma.rectangle.findMany({
       where,
       orderBy: [{ page: "asc" }, { y: "asc" }, { x: "asc" }],
-      skip,
-      take: pageSize,
-      include: {
-        father: { select: { id: true, type: true, labels: true } },
-        children: { select: { id: true, type: true, labels: true, page: true } },
-      },
+      include,
     }),
-    prisma.rectangle.count({ where }),
+    prisma.rectangle.findMany({
+      where: { documentId: id },
+      select: { id: true, labels: true, fatherId: true },
+    }),
   ]);
 
-  const hasMore = skip + rectangles.length < total;
+  const effectiveLabelsMap = buildEffectiveLabelsMap(treeForLabels);
 
-  return NextResponse.json({
-    items: rectangles,
-    page,
-    pageSize,
-    total,
-    hasMore,
+  const scored = matched.map((rect) => {
+    const effective = effectiveLabelsMap.get(rect.id) ?? rect.labels;
+    const relevanceScore = computeRelevanceScore(rect, effective, activeFilters);
+    return { ...rect, relevanceScore };
   });
+
+  // Sort: relevance DESC, then PDF reading order (page, y, x) ASC for a stable tiebreak.
+  scored.sort((a, b) => {
+    if (b.relevanceScore !== a.relevanceScore) return b.relevanceScore - a.relevanceScore;
+    if (a.page !== b.page) return a.page - b.page;
+    if (a.y !== b.y) return a.y - b.y;
+    return a.x - b.x;
+  });
+
+  const total = scored.length;
+  const items = scored.slice(skip, skip + pageSize);
+  const hasMore = skip + items.length < total;
+
+  return NextResponse.json({ items, page, pageSize, total, hasMore });
 }
 
 // POST /api/documents/:id/rectangles — create a new rectangle

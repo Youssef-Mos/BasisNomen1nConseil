@@ -355,6 +355,7 @@ export default function DocumentViewer({
                           docId={doc.id}
                           lang={lang}
                           query={(appliedFilters.search as string) ?? ""}
+                          hasActiveFilters={isFiltered}
                           onLightbox={setLightboxRect}
                         />
                       ))}

@@ -30,6 +30,7 @@ export default function ResultCard({
   docId,
   lang,
   query,
+  hasActiveFilters,
   onLightbox,
 }: {
   rect: RectClient;
@@ -37,10 +38,12 @@ export default function ResultCard({
   docId: string;
   lang: Lang;
   query: string;
+  hasActiveFilters: boolean;
   onLightbox: (rect: RectClient) => void;
 }) {
   const path = buildPath(rect, rectById);
   const text = getText(rect, lang);
+  const showRelevance = hasActiveFilters && typeof rect.relevanceScore === "number";
 
   return (
     <div className="bg-(--bg-surface) rounded-2xl border border-(--border-default) shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col pt-1">
@@ -58,7 +61,16 @@ export default function ResultCard({
             </span>
           </span>
         ))}
-        <span className="ml-auto text-xs text-(--text-muted) tabular-nums shrink-0">p.{rect.page}</span>
+        {showRelevance && (
+          <span
+            title={`Relevance score: ${rect.relevanceScore}`}
+            className="ml-auto inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-(--text-secondary) tabular-nums shrink-0 px-2 py-0.5 rounded-md bg-(--bg-page) border border-(--border-default)"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-(--text-secondary)" aria-hidden />
+            {rect.relevanceScore}
+          </span>
+        )}
+        <span className={`${showRelevance ? "" : "ml-auto"} text-xs text-(--text-muted) tabular-nums shrink-0`}>p.{rect.page}</span>
       </div>
 
       {/* Screenshot */}

@@ -23,6 +23,9 @@ export type RectClient = {
   textNl: string | null;
   labels: string[];
   fatherId: string | null;
+  // Optional: only present on rectangles returned by the filter endpoint.
+  // The unfiltered tree loaded in app/explore/[id]/page.tsx omits it.
+  relevanceScore?: number;
 };
 
 export type Lang = "fr" | "en" | "nl";
