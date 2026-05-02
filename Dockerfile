@@ -41,12 +41,22 @@ COPY . .
 
 RUN npx prisma generate && npm run build
 
-# Ensure the runtime mount points exist even before the volume is attached
-# (Railway will mount over them; locally they let the app boot without errors).
-RUN mkdir -p /app/uploads/pdfs /app/public/pdf-pages
+# Railway only allows one persistent volume per service, so we mount it at
+# /app/data and symlink the two app paths into it at boot. Remove any
+# stale build-time directories so the symlinks can be created cleanly.
+RUN rm -rf /app/uploads /app/public/pdf-pages
 
 ENV PORT=3000
 EXPOSE 3000
 
-# At boot: apply pending Prisma migrations, then start Next.
-CMD ["sh", "-c", "npx prisma migrate deploy && npx next start -p ${PORT:-3000}"]
+# At boot:
+#   1. ensure subdirs exist inside the persistent volume
+#   2. symlink /app/uploads and /app/public/pdf-pages onto the volume
+#   3. apply pending Prisma migrations
+#   4. start Next (exec so signals propagate to the Node process)
+CMD ["sh", "-c", "set -e; \
+  mkdir -p /app/data/uploads/pdfs /app/data/pdf-pages; \
+  ln -sfn /app/data/uploads /app/uploads; \
+  ln -sfn /app/data/pdf-pages /app/public/pdf-pages; \
+  npx prisma migrate deploy; \
+  exec npx next start -p ${PORT:-3000}"]
