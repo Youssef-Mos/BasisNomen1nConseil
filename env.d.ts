@@ -2,11 +2,15 @@ declare namespace NodeJS {
   interface ProcessEnv {
     DATABASE_URL: string;
     ADMIN_EMAIL: string;
-    SMTP_HOST: string;
-    SMTP_PORT: string;
-    SMTP_USER: string;
-    SMTP_PASS: string;
-    SMTP_FROM: string;
+    // Gmail SMTP (current). Use a Google App Password.
+    GMAIL_USER: string;
+    GMAIL_APP_PASSWORD: string;
+    // Generic SMTP (kept for when we move off Gmail — currently unused).
+    // SMTP_HOST: string;
+    // SMTP_PORT: string;
+    // SMTP_USER: string;
+    // SMTP_PASS: string;
+    // SMTP_FROM: string;
     ADMIN_SESSION_SECRET: string;
     NODE_ENV: "development" | "production" | "test";
   }
