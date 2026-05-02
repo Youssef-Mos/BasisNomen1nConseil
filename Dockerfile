@@ -29,6 +29,11 @@ RUN python3 -m venv /app/.venv \
     && /app/.venv/bin/pip install --no-cache-dir --upgrade pip \
     && /app/.venv/bin/pip install --no-cache-dir -r ./python-pipeline/requirements.txt
 
+# Prepend the venv to PATH so any route that spawns `python3` directly
+# (instead of going through getPythonExecutable) still hits the venv
+# interpreter that has PyMuPDF, pytesseract, etc. installed.
+ENV PATH="/app/.venv/bin:${PATH}"
+
 # ─── Node deps ──────────────────────────────────────────────────────────────
 # Use NODE_ENV=development for the install so devDependencies (typescript,
 # tailwind, @types/*) are present for `next build`. We flip it back before
