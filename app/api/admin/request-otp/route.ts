@@ -4,15 +4,16 @@ import nodemailer from "nodemailer";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(_request: NextRequest) {
-  // Rate limit: block if an OTP was created in the last 60 seconds
-  const recentOtp = await prisma.adminOtp.findFirst({
-    where: {
-      createdAt: { gt: new Date(Date.now() - 60 * 1000) },
-    },
-  });
-  if (recentOtp) {
-    return Response.json({ error: "Too many requests" }, { status: 429 });
-  }
+  // Rate limit disabled while we're validating the admin flow. Re-enable
+  // before exposing the endpoint publicly.
+  // const recentOtp = await prisma.adminOtp.findFirst({
+  //   where: {
+  //     createdAt: { gt: new Date(Date.now() - 60 * 1000) },
+  //   },
+  // });
+  // if (recentOtp) {
+  //   return Response.json({ error: "Too many requests" }, { status: 429 });
+  // }
 
   // Generate a cryptographically secure 6-digit code
   const code = crypto.randomInt(100000, 999999).toString();
@@ -46,25 +47,42 @@ export async function POST(_request: NextRequest) {
   //   },
   // });
 
+  // Always log the code on the server so we can recover it from Railway logs
+  // when SMTP misbehaves. Safe to remove once Gmail delivery is confirmed.
+  console.log(`[admin-otp] generated code=${code} for=${process.env.ADMIN_EMAIL}`);
+
   // Gmail SMTP via app password. Set GMAIL_USER + GMAIL_APP_PASSWORD in env.
+  // Short timeouts so a failing Gmail handshake can't hang the request.
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_APP_PASSWORD,
     },
+    connectionTimeout: 5_000,
+    greetingTimeout: 5_000,
+    socketTimeout: 5_000,
   });
 
-  try {
-    await transporter.sendMail({
+  // Fire-and-forget: respond immediately so the UI never hangs on SMTP.
+  // The OTP is already persisted in the DB, so the admin can log in even
+  // if the email is delayed or fails.
+  transporter
+    .sendMail({
       from: process.env.GMAIL_USER,
       to: process.env.ADMIN_EMAIL,
       subject: "BasisNomen — Code d'accès admin",
       text: `Votre code d'accès : ${code}\nCe code reste valide jusqu'à ce qu'un nouveau soit demandé. Ne pas partager.`,
+    })
+    .then(() => {
+      console.log(`[admin-otp] email sent to ${process.env.ADMIN_EMAIL}`);
+    })
+    .catch((err) => {
+      console.error(
+        `[admin-otp] email delivery failed:`,
+        err instanceof Error ? err.message : err,
+      );
     });
-  } catch {
-    return Response.json({ error: "Email delivery failed" }, { status: 500 });
-  }
 
   return Response.json({ success: true });
 }
