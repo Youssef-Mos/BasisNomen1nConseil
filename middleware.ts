@@ -6,15 +6,46 @@ import { NextRequest, NextResponse } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Redirect root → /explore
+  // ─── HTTP BASIC AUTH ───────────────────────────────────────────────────────
+  // Single shared credential pair gating the whole site. Set SITE_USER and
+  // SITE_PASSWORD as Railway env vars to override the defaults below.
+  const expectedUser = process.env.SITE_USER || "admin";
+  const expectedPass = process.env.SITE_PASSWORD || "BasisNomen2026!";
+
+  const authHeader = request.headers.get("authorization");
+  let authorized = false;
+
+  if (authHeader?.startsWith("Basic ")) {
+    try {
+      const decoded = atob(authHeader.slice("Basic ".length).trim());
+      const sepIdx = decoded.indexOf(":");
+      if (sepIdx !== -1) {
+        const user = decoded.slice(0, sepIdx);
+        const pass = decoded.slice(sepIdx + 1);
+        authorized = user === expectedUser && pass === expectedPass;
+      }
+    } catch {
+      authorized = false;
+    }
+  }
+
+  if (!authorized) {
+    return new NextResponse("Authentication required", {
+      status: 401,
+      headers: {
+        "WWW-Authenticate": 'Basic realm="BasisNomen", charset="UTF-8"',
+      },
+    });
+  }
+
+  // Redirect root → /explore (after auth so the prompt fires on first visit)
   if (pathname === "/") {
     return NextResponse.redirect(new URL("/explore", request.url));
   }
 
   // ─── AUTH DISABLED ─────────────────────────────────────────────────────────
-  // Temporary global bypass while the OTP / Gmail flow is being validated.
-  // Everything below is the original protection logic — restore by deleting
-  // this early return.
+  // Old admin OTP flow — kept commented for reference. Basic Auth above is the
+  // active gate. Restore by deleting this early return and the basic-auth block.
   return NextResponse.next();
 
   // Public paths — always pass through
