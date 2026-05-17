@@ -88,6 +88,60 @@ model Rectangle {
   textFr      String?
   textEn      String?
   textNl      String?
+  textDe      String?
+  textEs      String?
+  textIt      String?
+  textPt      String?
+  textRu      String?
+  textUk      String?
+  textPl      String?
+  textCs      String?
+  textSk      String?
+  textHu      String?
+  textRo      String?
+  textBg      String?
+  textEl      String?
+  textSv      String?
+  textNo      String?
+  textDa      String?
+  textFi      String?
+  textIs      String?
+  textEt      String?
+  textLv      String?
+  textLt      String?
+  textHr      String?
+  textSr      String?
+  textSl      String?
+  textMk      String?
+  textSq      String?
+  textTr      String?
+  textHe      String?
+  textAr      String?
+  textFa      String?
+  textUr      String?
+  textHi      String?
+  textBn      String?
+  textTa      String?
+  textTe      String?
+  textMr      String?
+  textGu      String?
+  textPa      String?
+  textZh      String?
+  textJa      String?
+  textKo      String?
+  textVi      String?
+  textTh      String?
+  textId      String?
+  textMs      String?
+  textTl      String?
+  textSw      String?
+  textAm      String?
+  textAf      String?
+  textZu      String?
+  textKa      String?
+  textHy      String?
+  textAz      String?
+  textKk      String?
   page        Int
   x           Float
   y           Float
